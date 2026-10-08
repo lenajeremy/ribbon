@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ribbon, the AI time tracker for Mac</title>
+<meta name="description" content="Ribbon is a free, open-source AI time tracker for Mac. It records the apps and websites you use, shows where your day went, and blocks distractions when you need to focus.">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.png">
+<style>
+  :root {
+    --page: #ffffff;
+    --band: #f5f5f7;
+    --ink: #0d0d0d;
+    --ink-2: #6e6e73;
+    --line: #e5e5e5;
+    --card: #ffffff;
+    --button: #0d0d0d;
+    --button-ink: #ffffff;
+    --window: #ffffff; --window-bar: #f6f6f6;
+    --blue: #2a78d6; --orange: #eb6834; --aqua: #1baf7a; --yellow: #eda100; --violet: #4a3aa7; --magenta: #e87ba4;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --page: #121212; --band: #1c1c1e; --ink: #ececec; --ink-2: #9b9b9f; --line: #2e2e30; --card: #232325;
+      --button: #ececec; --button-ink: #121212;
+      --window: #212121; --window-bar: #2a2a2a;
+      --blue: #3987e5; --orange: #d95926; --aqua: #199e70; --yellow: #c98500; --violet: #9085e9; --magenta: #d55181;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0; background: var(--page); color: var(--ink);
+    font: 17px/1.5 ui-sans-serif, -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: inherit; }
+  a:focus-visible, .button:focus-visible { outline: 2px solid var(--blue); outline-offset: 3px; border-radius: 999px; }
+
+  nav {
+    position: sticky; top: 0; z-index: 2;
+    display: flex; align-items: center; justify-content: space-between;
+    max-width: 1080px; margin: 0 auto; padding: 14px 24px;
+    background: color-mix(in srgb, var(--page) 82%, transparent);
+    backdrop-filter: saturate(180%) blur(20px); -webkit-backdrop-filter: saturate(180%) blur(20px);
+  }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 17px; text-decoration: none; letter-spacing: -0.01em; }
+  .brand svg { width: 26px; height: 26px; }
+  .nav-link { display: inline-flex; align-items: center; gap: 7px; font-size: 14px; text-decoration: none; color: var(--ink-2); }
+  .nav-link:hover { color: var(--ink); }
+  .nav-link svg { width: 17px; height: 17px; }
+
+  .hero { text-align: center; padding: 72px 24px 0; }
+  .pill {
+    display: inline-flex; align-items: center; gap: 10px;
+    padding: 7px 14px; border: 1px solid var(--line); border-radius: 999px;
+    font-size: 13.5px; color: var(--ink-2);
+  }
+  h1 {
+    margin: 26px auto 0; max-width: 14ch;
+    font-size: clamp(44px, 7.4vw, 80px); line-height: 1.04; font-weight: 600; letter-spacing: -0.035em;
+  }
+  .lede { margin: 22px auto 0; max-width: 34em; font-size: clamp(18px, 2.1vw, 21px); line-height: 1.45; color: var(--ink-2); letter-spacing: -0.01em; }
+  .actions { margin-top: 32px; display: flex; flex-wrap: wrap; gap: 14px 18px; justify-content: center; align-items: center; }
+  .button {
+    display: inline-flex; align-items: center; gap: 9px;
+    height: 46px; padding: 0 22px; border-radius: 999px;
+    background: var(--button); color: var(--button-ink); text-decoration: none; font-size: 15.5px; font-weight: 500;
+    transition: opacity .15s ease;
+  }
+  .button:hover { opacity: .85; }
+  .button svg { width: 18px; height: 18px; }
+  .note { font-size: 14px; color: var(--ink-2); }
+
+  .shot { max-width: 1080px; margin: 64px auto 0; padding: 0 24px; }
+  .window {
+    border-radius: 14px; overflow: hidden; background: var(--window);
+    border: 1px solid var(--line);
+    box-shadow: 0 30px 80px -20px rgba(0,0,0,.22), 0 8px 24px -8px rgba(0,0,0,.10);
+  }
+  .window .bar { height: 34px; display: flex; align-items: center; gap: 8px; padding: 0 14px; background: var(--window-bar); border-bottom: 1px solid var(--line); }
+  .window .bar i { width: 12px; height: 12px; border-radius: 50%; display: block; }
+  .window img { display: block; width: 100%; height: auto; }
+
+  .features { background: var(--band); margin-top: 96px; padding: 88px 24px; }
+  .grid { max-width: 1080px; margin: 0 auto; display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+  .card { background: var(--card); border-radius: 22px; padding: 34px 34px 36px; }
+  .icon { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; }
+  .icon svg { width: 22px; height: 22px; stroke: #fff; fill: none; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+  .card h2 { margin: 22px 0 8px; font-size: 24px; line-height: 1.2; font-weight: 600; letter-spacing: -0.02em; }
+  .card p { margin: 0; color: var(--ink-2); font-size: 17px; line-height: 1.5; max-width: 30em; }
+
+  .closing { text-align: center; padding: 96px 24px 40px; }
+  .closing h2 { margin: 0; font-size: clamp(32px, 4.6vw, 48px); font-weight: 600; letter-spacing: -0.03em; line-height: 1.1; }
+  .closing p { margin: 14px auto 0; color: var(--ink-2); font-size: 18px; max-width: 32em; }
+  footer { text-align: center; padding: 48px 24px 56px; font-size: 13px; color: var(--ink-2); }
+
+  @media (max-width: 760px) {
+    .grid { grid-template-columns: 1fr; }
+    .hero { padding-top: 48px; }
+    .shot { margin-top: 44px; }
+    .features { margin-top: 64px; padding: 56px 18px; }
+    .card { padding: 26px; }
+  }
+</style>
+</head>
+<body>
+  <nav>
+    <a class="brand" href="#">
+      <svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="14" fill="var(--ink)"/><path d="M23.5 14h9a9 9 0 0 1 0 18l9 18h-18z" fill="var(--page)"/></svg>
+      Ribbon
+    </a>
+    <a class="nav-link" href="https://github.com/lenajeremy/ribbon">
+      <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+      GitHub
+    </a>
+  </nav>
+
+  <header class="hero">
+    <span class="pill">
+      Free and open source
+    </span>
+    <h1>The AI time tracker for Mac.</h1>
+    <p class="lede">Ribbon records the apps and websites you use, shows where your day went, and blocks distractions when you need to focus.</p>
+    <div class="actions">
+      <a class="button" href="https://github.com/lenajeremy/ribbon">
+        <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+        Get Ribbon on GitHub
+      </a>
+      <span class="note">For macOS 14 and later</span>
+    </div>
+  </header>
+
+  <section class="shot" aria-label="Ribbon's Today view">
+    <div class="window">
+      <div class="bar" aria-hidden="true"><i style="background:#ff5f57"></i><i style="background:#febc2e"></i><i style="background:#28c840"></i></div>
+      <picture>
+        <source srcset="screenshot-dark.png" media="(prefers-color-scheme: dark)">
+        <img src="screenshot.png" alt="Ribbon's Today view: a headline written by AI, the day as a colored ribbon of activity, a short summary, and scores." width="2000" height="1450">
+      </picture>
+    </div>
+  </section>
+
+  <section class="features">
+    <div class="grid">
+      <article class="card">
+        <div class="icon" style="background:var(--blue)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
+        <h2>Tracks itself</h2>
+        <p>Every app and website, timed to the second. Nothing to start or stop, and your data stays on your Mac.</p>
+      </article>
+      <article class="card">
+        <div class="icon" style="background:var(--orange)"><svg viewBox="0 0 24 24"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M18.5 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/></svg></div>
+        <h2>Sorted by AI</h2>
+        <p>New apps and sites land in the right category on their own. Make your own categories by describing them.</p>
+      </article>
+      <article class="card">
+        <div class="icon" style="background:var(--aqua)"><svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9v4"/><path d="M9.5 2.5h5"/></svg></div>
+        <h2>Focus sessions</h2>
+        <p>Choose the apps and websites a session allows. Everything else is blocked until you're done.</p>
+      </article>
+      <article class="card">
+        <div class="icon" style="background:var(--violet)"><svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 0 1-11.6 7.1L4 20l1-4.2A8 8 0 1 1 20 12z"/></svg></div>
+        <h2>Ask your day</h2>
+        <p>Ask “Where did my afternoon go?” and get answers from your own log, the way you'd ask a chat.</p>
+      </article>
+    </div>
+  </section>
+
+  <section class="closing">
+    <h2>Free, open source, and private.</h2>
+    <p>Build it with one command, bring your own OpenAI API key, and everything you track stays on your Mac.</p>
+    <div class="actions">
+      <a class="button" href="https://github.com/lenajeremy/ribbon">View the source on GitHub</a>
+    </div>
+  </section>
+
+  <footer>Ribbon is released under the MIT license.</footer>
+</body>
+</html>

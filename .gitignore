@@ -1,0 +1,7 @@
+# Your OpenAI key lives here; never commit it.
+.env
+.build/
+build/
+.swiftpm/
+*.xcodeproj/
+.DS_Store
