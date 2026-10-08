@@ -2,7 +2,7 @@
 
 The AI time tracker for Mac. Ribbon records the apps and websites you use, shows where your day went, and blocks distractions when you need to focus.
 
-**Website:** https://lenajeremy.github.io/ribbon/
+**Website:** https://ribbon-lake.vercel.app
 
 ![Ribbon's Today view](docs/screenshot.png)
 
