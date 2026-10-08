@@ -60,11 +60,11 @@
     font-size: 13.5px; color: var(--ink-2);
   }
   h1 {
-    margin: 26px auto 0; max-width: 14ch;
-    font-size: clamp(44px, 7.4vw, 80px); line-height: 1.04; font-weight: 600; letter-spacing: -0.035em;
+    margin: 24px auto 0; max-width: 12em; text-wrap: balance;
+    font-size: clamp(44px, 7vw, 76px); line-height: 1.05; font-weight: 600; letter-spacing: -0.035em;
   }
-  .lede { margin: 22px auto 0; max-width: 34em; font-size: clamp(18px, 2.1vw, 21px); line-height: 1.45; color: var(--ink-2); letter-spacing: -0.01em; }
-  .actions { margin-top: 32px; display: flex; flex-wrap: wrap; gap: 14px 18px; justify-content: center; align-items: center; }
+  .lede { margin: 24px auto 0; max-width: 31em; text-wrap: balance; font-size: clamp(18px, 2.1vw, 21px); line-height: 1.45; color: var(--ink-2); letter-spacing: -0.01em; }
+  .actions { margin-top: 36px; display: flex; flex-wrap: wrap; gap: 14px 18px; justify-content: center; align-items: center; }
   .button {
     display: inline-flex; align-items: center; gap: 9px;
     height: 46px; padding: 0 22px; border-radius: 999px;
@@ -73,7 +73,7 @@
   }
   .button:hover { opacity: .85; }
   .button svg { width: 18px; height: 18px; }
-  .note { margin: 16px 0 0; font-size: 14px; color: var(--ink-2); }
+  .note { margin: 20px 0 0; font-size: 14px; color: var(--ink-2); }
   .button.secondary { background: transparent; color: var(--ink); box-shadow: inset 0 0 0 1px var(--line); }
 
   .shot { max-width: 1080px; margin: 64px auto 0; padding: 0 24px; }
@@ -109,7 +109,8 @@
   .sorted li:last-child { padding-bottom: 0; }
   .app { display: flex; align-items: center; gap: 12px; font-weight: 500; }
   .glyph { flex: none; width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; background: var(--fill); color: var(--ink-2); }
-  .glyph svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.6; }
+  .glyph img { width: 18px; height: 18px; }
+  .logo { flex: none; width: 30px; height: 30px; }
   .tag { display: inline-flex; align-items: center; gap: 7px; padding: 5px 12px; border-radius: 999px; background: var(--fill); font-size: 13.5px; white-space: nowrap; }
   .tag i { width: 8px; height: 8px; border-radius: 2.5px; }
 
@@ -211,10 +212,10 @@
       <article class="tile narrow">
         <p><strong>Sorts your time into categories.</strong> AI puts each app and website into a category, like Code or Meetings. You can add your own categories too.</p>
         <ul class="viz sorted" aria-hidden="true">
-          <li><span class="app"><span class="glyph"><svg viewBox="0 0 16 16"><rect x="2.5" y="2.5" width="11" height="11" rx="3"/></svg></span>Xcode</span><span class="tag"><i style="background:var(--blue)"></i>Code</span></li>
-          <li><span class="app"><span class="glyph"><svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="5.75"/><path d="M2.25 8h11.5M8 2.25c1.6 1.6 2.4 3.5 2.4 5.75S9.6 12.15 8 13.75C6.4 12.15 5.6 10.25 5.6 8S6.4 3.85 8 2.25z"/></svg></span>figma.com</span><span class="tag"><i style="background:var(--orange)"></i>Design</span></li>
-          <li><span class="app"><span class="glyph"><svg viewBox="0 0 16 16"><rect x="2.5" y="2.5" width="11" height="11" rx="3"/></svg></span>zoom.us</span><span class="tag"><i style="background:var(--violet)"></i>Meetings</span></li>
-          <li><span class="app"><span class="glyph"><svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="5.75"/><path d="M2.25 8h11.5M8 2.25c1.6 1.6 2.4 3.5 2.4 5.75S9.6 12.15 8 13.75C6.4 12.15 5.6 10.25 5.6 8S6.4 3.85 8 2.25z"/></svg></span>youtube.com</span><span class="tag"><i style="background:var(--magenta)"></i>Entertainment</span></li>
+          <li><span class="app"><img class="logo" src="logos/xcode.png" alt="" width="30" height="30">Xcode</span><span class="tag"><i style="background:var(--blue)"></i>Code</span></li>
+          <li><span class="app"><img class="logo" src="logos/figma.png" alt="" width="30" height="30">Figma</span><span class="tag"><i style="background:var(--orange)"></i>Design</span></li>
+          <li><span class="app"><img class="logo" src="logos/zoom.png" alt="" width="30" height="30">zoom.us</span><span class="tag"><i style="background:var(--violet)"></i>Meetings</span></li>
+          <li><span class="app"><span class="glyph"><img src="logos/youtube.png" alt="" width="18" height="18"></span>youtube.com</span><span class="tag"><i style="background:var(--magenta)"></i>Entertainment</span></li>
         </ul>
       </article>
       <article class="tile narrow">
