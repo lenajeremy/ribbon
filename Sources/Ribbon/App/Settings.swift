@@ -10,6 +10,7 @@ import ServiceManagement
     var breakReminders: Bool { didSet { defaults.set(breakReminders, forKey: "breakReminders") } }
     var breakIntervalMinutes: Int { didSet { defaults.set(breakIntervalMinutes, forKey: "breakIntervalMinutes") } }
     var showOrbWhenIdle: Bool { didSet { defaults.set(showOrbWhenIdle, forKey: "showOrbWhenIdle") } }
+    var automaticUpdates: Bool { didSet { defaults.set(automaticUpdates, forKey: "automaticUpdates") } }
 
     var focusGoal: TimeInterval { focusGoalHours * 3600 }
     var breakInterval: TimeInterval { TimeInterval(breakIntervalMinutes * 60) }
@@ -27,11 +28,12 @@ import ServiceManagement
 
     init() {
         defaults.register(defaults: ["idleMinutes": 5, "focusGoalHours": 4.0, "breakReminders": true,
-                                     "breakIntervalMinutes": 50, "showOrbWhenIdle": true])
+                                     "breakIntervalMinutes": 50, "showOrbWhenIdle": true, "automaticUpdates": true])
         idleMinutes = defaults.integer(forKey: "idleMinutes")
         focusGoalHours = defaults.double(forKey: "focusGoalHours")
         breakReminders = defaults.bool(forKey: "breakReminders")
         breakIntervalMinutes = defaults.integer(forKey: "breakIntervalMinutes")
         showOrbWhenIdle = defaults.bool(forKey: "showOrbWhenIdle")
+        automaticUpdates = defaults.bool(forKey: "automaticUpdates")
     }
 }

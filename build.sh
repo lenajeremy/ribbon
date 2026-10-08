@@ -9,8 +9,10 @@ swift build -c release
 STAGE=".build/Ribbon.app"
 make_bundle .build/release/Ribbon "$STAGE" "$PWD/.env"
 
-# A stable signature keeps the Screen Recording permission across rebuilds.
-IDENTITY="${CODESIGN_IDENTITY:-$(security find-identity -v -p codesigning | awk -F'"' '/Apple Development/ { print $2; exit }')}"
+# A stable signature keeps permissions like Screen Recording across rebuilds. The Developer ID that signs
+# releases comes first, so a build from source can update to a downloaded release and keep them too.
+IDENTITY="${CODESIGN_IDENTITY:-$(security find-identity -v -p codesigning | awk -F'"' '/Developer ID Application/ { print $2; exit }')}"
+IDENTITY="${IDENTITY:-$(security find-identity -v -p codesigning | awk -F'"' '/Apple Development/ { print $2; exit }')}"
 codesign --force --sign "${IDENTITY:--}" "$STAGE"
 
 APP="/Applications/Ribbon.app"

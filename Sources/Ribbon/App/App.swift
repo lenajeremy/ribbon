@@ -22,6 +22,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusBar: StatusBar!
     private var breakCoach: BreakCoach!
     private var assistant: Assistant!
+    private var updater: Updater!
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         if let id = Bundle.main.bundleIdentifier,
@@ -32,7 +33,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         let config = Config.load()
         let aiEnabled = !config.apiKey.isEmpty
+        // A key from .env (builds from source) is kept in the keychain too, so it survives updating to a downloaded build.
+        if aiEnabled && APIKeyStore.read() == nil { APIKeyStore.save(config.apiKey) }
         let settings = Settings()
+        updater = Updater(settings: settings)
         let openai = OpenAI(key: config.apiKey)
         store = Store()
         Categories.custom = store.customCategories()
@@ -48,10 +52,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         focus = FocusController(config: config, openai: openai, store: store, assistant: assistant, settings: settings,
                                 profiles: { model.profiles })
         dashboardModel.focus = focus
+        dashboardModel.updater = updater
         blocker = Blocker(browsers: tracker.browsers, rules: { reports.rules })
         statusBar = StatusBar(reports: reports, tracker: tracker, focus: focus) { [weak self] section in
             self?.dashboard.show(section)
         }
+        statusBar.updater = updater
+        updater.isBusy = { [weak self] in self?.focus.model.phase == .focus }
         breakCoach = BreakCoach(tracker: tracker, settings: settings, isFocusing: { [weak self] in
             self?.focus.model.phase != .idle
         })
@@ -68,6 +75,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 Blocker.requestAccessibility()
             }
             statusBar.update()
+            updater.focusEnded()
         }
         focus.openDashboard = { [weak self] in self?.dashboard.show(.today) }
 
@@ -78,6 +86,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         tracker.start()
         breakCoach.start()
         scheduleReviews()
+        updater.start()
         Task { await classifier.repairCustomLabels() }
         if args.contains("--dashboard") { dashboard.show(.today) }
         logLine("Ribbon ready. Tracking \(tracker.isPaused ? "paused" : "on"); AI \(aiEnabled ? "on" : "off")")
@@ -92,6 +101,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         // focus is nil when a second copy quits right after launch.
         (focus?.allowQuit() ?? true) ? .terminateNow : .terminateCancel
+    }
+
+    func applicationWillTerminate(_ notification: Notification) {
+        updater?.applicationWillQuit()
+    }
+
+    @objc func checkForUpdates(_ sender: Any?) {
+        Task { await updater.check(userInitiated: true) }
     }
 
     /// Yesterday's review and last week's review get written in the background, so they're waiting for you.
@@ -128,6 +145,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         submenu("Ribbon", [
             NSMenuItem(title: "About Ribbon", action: #selector(NSApplication.orderFrontStandardAboutPanel(_:)), keyEquivalent: ""),
+            NSMenuItem(title: "Check for Updates…", action: #selector(AppDelegate.checkForUpdates(_:)), keyEquivalent: ""),
             .separator(),
             NSMenuItem(title: "Hide Ribbon", action: #selector(NSApplication.hide(_:)), keyEquivalent: "h"),
             NSMenuItem(title: "Quit Ribbon", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"),

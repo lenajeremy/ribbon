@@ -31,8 +31,10 @@ if [[ "${SKIP_NOTARIZE:-}" != "1" ]]; then
     ditto -c -k --keepParent dist/Ribbon.app dist/Ribbon.zip
     notarize dist/Ribbon.zip
     xcrun stapler staple dist/Ribbon.app
-    rm dist/Ribbon.zip
 fi
+# Ribbon.zip is what the in-app updater downloads, so zip the app again now that it's stapled.
+rm -f dist/Ribbon.zip
+ditto -c -k --keepParent dist/Ribbon.app dist/Ribbon.zip
 
 echo "Making the disk image…"
 mkdir -p dist/dmg
@@ -48,4 +50,4 @@ if [[ "${SKIP_NOTARIZE:-}" != "1" ]]; then
     xcrun stapler staple dist/Ribbon.dmg
     spctl --assess --type open --context context:primary-signature --verbose=1 dist/Ribbon.dmg
 fi
-echo "Done: dist/Ribbon.dmg (Ribbon $RIBBON_VERSION)"
+echo "Done: dist/Ribbon.dmg and dist/Ribbon.zip (Ribbon $RIBBON_VERSION). Publish them with scripts/publish.sh."

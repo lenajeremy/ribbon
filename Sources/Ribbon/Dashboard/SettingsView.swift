@@ -84,6 +84,19 @@ struct SettingsView: View {
                 Toggle("", isOn: $settings.showOrbWhenIdle).toggleStyle(.switch).labelsHidden()
                     .onChange(of: settings.showOrbWhenIdle) { model.focus?.updateOverlayVisibility() }
             }
+            SettingRow("Install updates automatically", "Ribbon downloads new versions and shows you what's new. They're installed when Ribbon restarts.") {
+                Toggle("", isOn: $settings.automaticUpdates).toggleStyle(.switch).labelsHidden()
+            }
+            if let updater = model.updater {
+                SettingRow("Ribbon \(Updater.current)", updateStatus(updater)) {
+                    if updater.latest != nil {
+                        Button("See Update") { updater.showWindow() }.buttonStyle(PillButtonStyle(primary: true))
+                    } else {
+                        Button("Check Now") { Task { await updater.check(userInitiated: true) } }
+                            .buttonStyle(PillButtonStyle()).disabled(updater.phase == .checking)
+                    }
+                }
+            }
         case .tracking:
             SettingRow("Tracking", model.tracker.isPaused
                        ? "Paused until \(model.tracker.pausedUntil?.formatted(date: .omitted, time: .shortened) ?? "later")."
@@ -173,6 +186,19 @@ struct SettingsView: View {
             InstalledApps.all.first { $0.bundleID == id }.map { (id, $0.name) }
         }
         .sorted { $0.name < $1.name }
+    }
+
+    private func updateStatus(_ updater: Updater) -> String {
+        if let latest = updater.latest {
+            return updater.phase == .ready ? "Ribbon \(latest.version) is ready. Restart Ribbon to install it." : "Ribbon \(latest.version) is available."
+        }
+        switch updater.phase {
+        case .checking: return "Checking for updates…"
+        case .failed: return "Couldn't check for updates."
+        default:
+            guard let checked = updater.lastChecked else { return "You're on the newest version." }
+            return "You're on the newest version. Checked \(checked.formatted(.relative(presentation: .named)))."
+        }
     }
 
     private func pause(_ seconds: TimeInterval) { pause(until: Date().addingTimeInterval(seconds)) }

@@ -1,6 +1,6 @@
 # Ribbon
 
-The AI time tracker for Mac. Ribbon records the apps and websites you use, shows where your day went, and blocks distractions when you need to focus.
+The AI time tracker for Mac. Ribbon tracks the apps and websites you use, shows how you spent your day, and blocks distractions while you work.
 
 **Website:** https://ribbon-lake.vercel.app
 
@@ -8,15 +8,17 @@ The AI time tracker for Mac. Ribbon records the apps and websites you use, shows
 
 ## What it does
 
-- **Tracks itself.** Every app and website, timed to the second, with idle and lock-screen detection. Everything is stored locally.
-- **Sorts your time with AI.** Apps and sites land in categories on their own (OpenAI's Decisions API). Add your own categories by describing what belongs in them.
+- **Tracks your time automatically.** Every app and website you use, and for how long, with idle and lock-screen detection. Everything is stored on your Mac.
+- **Sorts your time into categories.** AI puts each app and website into a category (OpenAI's Decisions API). Add your own categories by describing what belongs in them.
 - **Shows your day.** A daily ribbon of your activity, focus blocks, breaks, Productivity / Focus / Break scores, and daily and weekly reviews written by AI.
-- **Focus sessions.** Session types decide which apps and websites you can use. Anything else is hidden or quit, and blocked tabs turn into a "blocked" page. An optional orb watches your screens and nudges you out loud when you drift.
-- **Ask your day.** Ask questions like "Where did my afternoon go?" and get answers from your own log.
+- **Blocks distractions while you focus.** Session types decide which apps and websites you can use. Anything else is hidden or quit, and blocked tabs turn into a "blocked" page. An optional orb watches your screens and nudges you out loud when you drift.
+- **Answers questions about your time.** Ask things like "How long was I on YouTube this week?" and get answers from your own log.
 
 ## Download
 
 Get the latest notarized build: **[Ribbon.dmg](https://github.com/lenajeremy/ribbon/releases/latest/download/Ribbon.dmg)**. Open it, drag Ribbon to Applications, and add your OpenAI API key in Settings › AI.
+
+Ribbon keeps itself up to date. It checks this repository's releases every few hours, shows you what's new, and installs the new version when it restarts. Updates are installed only if they're signed by the same developer. To turn this off, go to Settings › General. See what changed in each version in [CHANGELOG.md](CHANGELOG.md).
 
 ## Build from source
 
@@ -37,7 +39,13 @@ cp .env.example .env      # then put your OpenAI API key in .env
 
 Ribbon lives in the menu bar. Open the dashboard from there, or open Ribbon again from Spotlight.
 
-`build.sh` signs with your Apple Development certificate if you have one, so macOS remembers the permissions below across rebuilds; otherwise it signs ad hoc. To make a signed, notarized `Ribbon.dmg` (Developer ID certificate required), run `scripts/release.sh`.
+`build.sh` signs with your Developer ID or Apple Development certificate if you have one, so macOS remembers the permissions below across rebuilds; otherwise it signs ad hoc.
+
+### Release a new version
+
+1. Raise `RIBBON_VERSION` and `RIBBON_BUILD` in `scripts/make_bundle.sh`, and add a section for the version to `CHANGELOG.md`.
+2. Run `scripts/release.sh` to build a universal app, sign it with your Developer ID and notarize it. It makes `dist/Ribbon.dmg` for the website and `dist/Ribbon.zip` for the updater.
+3. Run `scripts/publish.sh` to create the GitHub release with both files, using the version's changelog section as its notes. Copies of Ribbon find it within a few hours.
 
 ## Permissions
 

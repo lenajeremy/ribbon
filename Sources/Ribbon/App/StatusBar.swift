@@ -7,6 +7,7 @@ import AppKit
     private let tracker: ActivityTracker
     private let focus: FocusController
     private let openDashboard: (DashboardModel.Section?) -> Void
+    var updater: Updater?
 
     init(reports: Reports, tracker: ActivityTracker, focus: FocusController, openDashboard: @escaping (DashboardModel.Section?) -> Void) {
         self.reports = reports
@@ -62,6 +63,11 @@ import AppKit
             menu.addItem(pause)
         }
         menu.addItem(.separator())
+        if let latest = updater?.latest {
+            add(menu, updater?.phase == .ready ? "Restart to Update to \(latest.version)…" : "Update to Ribbon \(latest.version)…", #selector(showUpdate), "")
+        } else {
+            add(menu, "Check for Updates…", #selector(checkForUpdates), "")
+        }
         add(menu, "Quit Ribbon", #selector(quit), "q")
     }
 
@@ -82,6 +88,8 @@ import AppKit
         update()
     }
     @objc private func quit() { NSApp.terminate(nil) }
+    @objc private func showUpdate() { updater?.showWindow() }
+    @objc private func checkForUpdates() { Task { await updater?.check(userInitiated: true) } }
 
     /// A small orb with a timer ring, drawn as a template so it follows the menu bar's color.
     private static let icon: NSImage = {

@@ -83,6 +83,7 @@ struct Chat: Identifiable, Hashable, Codable {
     @ObservationIgnored let tracker: ActivityTracker
     @ObservationIgnored let settings: Settings
     @ObservationIgnored var focus: FocusController?
+    @ObservationIgnored var updater: Updater?
     @ObservationIgnored private var conversationID: String?
     @ObservationIgnored private var timer: Timer?
 

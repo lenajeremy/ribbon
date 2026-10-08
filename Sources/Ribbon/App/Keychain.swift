@@ -32,7 +32,7 @@ enum APIKeyStore {
     let path = Bundle.main.bundlePath.replacingOccurrences(of: "'", with: "'\\''")
     let task = Process()
     task.executableURL = URL(fileURLWithPath: "/bin/sh")
-    task.arguments = ["-c", "sleep 1; open '\(path)'"]
+    task.arguments = ["-c", "while kill -0 \(getpid()) 2>/dev/null; do sleep 0.2; done; open '\(path)'"]
     try? task.run()
     NSApp.terminate(nil)
 }
