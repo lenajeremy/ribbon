@@ -229,13 +229,35 @@ enum Analytics {
         return breaks
     }
 
-    /// Changes of app or website, ignoring anything open for less than 5 seconds.
+    /// A move to another app or website only counts once you've stayed there this long.
+    static let minimumStay: TimeInterval = 10
+    private static let ownBundle = Bundle.main.bundleIdentifier ?? "com.jeremiahlena.focusorb"
+
+    /// Moves to a different app or website where you then stay at least `minimumStay`. Back-to-back rows in the
+    /// same place are one stay (a new window title starts a new row). Ribbon's own windows aren't a place, and a
+    /// browser row without an address (the browser didn't answer for a moment) is the site it showed just before.
     static func countSwitches(_ segments: [Segment]) -> Int {
+        var stays: [(place: String, seconds: TimeInterval)] = []
+        var lastSite: [String: (domain: String, end: Date)] = [:]
+        for segment in segments where segment.bundle != ownBundle {
+            var place = segment.label
+            if !segment.domain.isEmpty {
+                lastSite[segment.bundle] = (segment.domain, segment.end)
+            } else if let site = lastSite[segment.bundle], segment.start.timeIntervalSince(site.end) < 60 {
+                place = site.domain
+                lastSite[segment.bundle] = (site.domain, segment.end)
+            }
+            if stays.last?.place == place {
+                stays[stays.count - 1].seconds += segment.duration
+            } else {
+                stays.append((place, segment.duration))
+            }
+        }
         var switches = 0
         var previous: String?
-        for segment in segments where segment.duration >= 5 {
-            if let previous, previous != segment.label { switches += 1 }
-            previous = segment.label
+        for stay in stays where stay.seconds >= minimumStay {
+            if let previous, previous != stay.place { switches += 1 }
+            previous = stay.place
         }
         return switches
     }

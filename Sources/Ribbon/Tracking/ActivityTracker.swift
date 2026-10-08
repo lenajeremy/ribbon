@@ -33,6 +33,8 @@ struct FrontActivity: Equatable {
     private(set) var streakStart: Date?
     private var lastActive: Date?
     private var lastURL: (bundle: String, title: String, at: Date, url: String)?
+    /// The last address a browser did give, for the moments when asking it fails.
+    private var lastGoodURL: (bundle: String, at: Date, url: String)?
     private var screenLocked = false
     private var screensAsleep = false
 
@@ -124,7 +126,13 @@ struct FrontActivity: Equatable {
 
     private func browserURL(_ bundle: String, title: String, now: Date) -> String {
         if let last = lastURL, last.bundle == bundle, last.title == title, now.timeIntervalSince(last.at) < 5 { return last.url }
-        let url = browsers.url(of: bundle) ?? ""
+        var url = browsers.url(of: bundle) ?? ""
+        if !url.isEmpty {
+            lastGoodURL = (bundle, now, url)
+        } else if let good = lastGoodURL, good.bundle == bundle, now.timeIntervalSince(good.at) < 30 {
+            // The browser sometimes doesn't answer for a moment. That isn't leaving the page.
+            url = good.url
+        }
         lastURL = (bundle, title, now, url)
         return url
     }
