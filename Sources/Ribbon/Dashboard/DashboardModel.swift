@@ -63,6 +63,8 @@ struct Chat: Identifiable, Hashable, Codable {
     var chatID: String?
     var recentDays: [(day: Date, seconds: Double)] = []
     var showSettings = false
+    /// Which part of Settings to open on.
+    var settingsPane = "General"
     var profiles: [SessionProfile]
     var sessions: [SessionRecord] = []
     var items: [KnownItem] = []

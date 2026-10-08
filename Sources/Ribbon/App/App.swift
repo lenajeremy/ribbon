@@ -90,7 +90,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
-        focus.allowQuit() ? .terminateNow : .terminateCancel
+        // focus is nil when a second copy quits right after launch.
+        (focus?.allowQuit() ?? true) ? .terminateNow : .terminateCancel
     }
 
     /// Yesterday's review and last week's review get written in the background, so they're waiting for you.

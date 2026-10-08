@@ -7,6 +7,8 @@ import SwiftUI
 struct SettingsView: View {
     let model: DashboardModel
     @State private var pane: Pane = .general
+    @State private var newKey = ""
+    @State private var keySaved = false
     @State private var confirmDelete = false
     @State private var refresh = 0
     @Environment(\.dismiss) private var dismiss
@@ -59,6 +61,7 @@ struct SettingsView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .frame(width: 720, height: 500)
+        .onAppear { pane = Pane(rawValue: model.settingsPane) ?? .general; model.settingsPane = Pane.general.rawValue }
         .background(Theme.page)
         .id(refresh)
         .alert("Delete all tracked data?", isPresented: $confirmDelete) {
@@ -132,11 +135,25 @@ struct SettingsView: View {
                               granted: access == .granted, denied: access == .denied, pane: "Privacy_Automation")
             }
         case .ai:
-            SettingRow("OpenAI", model.assistant.enabled
-                       ? "Sorting apps and sites and picking session types use the Decisions API; summaries and answers use the Responses API (gpt-6-luna)."
-                       : "Add OPENAI_API_KEY to the .env file in the project folder, then relaunch.") {
-                Text(model.assistant.enabled ? "Connected" : "Not set up").font(Typeface.caption)
-                    .foregroundStyle(model.assistant.enabled ? Theme.ink : Theme.distracting)
+            SettingRow("OpenAI API key", keySaved ? "Saved to your keychain. Relaunch Ribbon to start using it."
+                       : model.assistant.enabled ? "Connected. Paste a different key to replace it."
+                       : "Turns on sorting, summaries, answers and the orb. Get a key at platform.openai.com.") {
+                if keySaved {
+                    Button("Relaunch") { relaunch() }.buttonStyle(PillButtonStyle(primary: true))
+                } else {
+                    HStack(spacing: 8) {
+                        SecureField("sk-…", text: $newKey)
+                            .textFieldStyle(.plain).font(.system(size: 13))
+                            .padding(.horizontal, 10).frame(width: 190, height: 30)
+                            .background(Theme.bubble, in: RoundedRectangle(cornerRadius: 8))
+                        Button("Save") { keySaved = APIKeyStore.save(newKey); newKey = "" }
+                            .buttonStyle(PillButtonStyle(primary: true))
+                            .disabled(newKey.trimmingCharacters(in: .whitespaces).isEmpty)
+                    }
+                }
+            }
+            SettingRow("Models", "Sorting apps and sites and picking session types use the Decisions API; summaries and answers use the Responses API (gpt-6-luna).") {
+                EmptyView()
             }
             SettingRow("What the AI sees", "App names, website names, page titles and totals. Screenshots only during focus sessions that watch your screen, and they're never saved.") {
                 EmptyView()

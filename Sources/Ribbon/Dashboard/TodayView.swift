@@ -40,6 +40,17 @@ struct TodayView: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 10) {
+            if !model.assistant.enabled {
+                HStack(spacing: 10) {
+                    Image(systemName: "key")
+                    Text("Add your OpenAI API key to turn on AI sorting, summaries and answers.").font(Typeface.row)
+                    Spacer()
+                    Button("Add key") { model.settingsPane = "AI"; model.showSettings = true }.buttonStyle(PillButtonStyle(primary: true))
+                }
+                .padding(12)
+                .background(Theme.bubble, in: RoundedRectangle(cornerRadius: 12))
+                .padding(.bottom, 18)
+            }
             DayStepper(title: model.isToday ? "Today" : model.day.formatted(.dateTime.weekday(.wide).month(.wide).day()),
                        isCurrent: model.isToday,
                        back: { model.moveDay(by: -1) }, forward: { model.moveDay(by: 1) },

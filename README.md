@@ -14,13 +14,19 @@ The AI time tracker for Mac. Ribbon records the apps and websites you use, shows
 - **Focus sessions.** Session types decide which apps and websites you can use. Anything else is hidden or quit, and blocked tabs turn into a "blocked" page. An optional orb watches your screens and nudges you out loud when you drift.
 - **Ask your day.** Ask questions like "Where did my afternoon go?" and get answers from your own log.
 
-## Requirements
+## Download
+
+Get the latest notarized build: **[Ribbon.dmg](https://github.com/lenajeremy/ribbon/releases/latest/download/Ribbon.dmg)**. Open it, drag Ribbon to Applications, and add your OpenAI API key in Settings › AI.
+
+## Build from source
+
+### Requirements
 
 - macOS 14 or later, Apple silicon or Intel
 - Xcode with Swift 6 (command line tools are enough to build)
 - An OpenAI API key (models: `gpt-6-luna` for sorting, reviews and answers; `gpt-4o-mini-tts` for the orb's voice)
 
-## Build and run
+### Build and run
 
 ```sh
 git clone https://github.com/lenajeremy/ribbon.git
@@ -31,7 +37,7 @@ cp .env.example .env      # then put your OpenAI API key in .env
 
 Ribbon lives in the menu bar. Open the dashboard from there, or open Ribbon again from Spotlight.
 
-`build.sh` signs with your Apple Development certificate if you have one, so macOS remembers the permissions below across rebuilds; otherwise it signs ad hoc.
+`build.sh` signs with your Apple Development certificate if you have one, so macOS remembers the permissions below across rebuilds; otherwise it signs ad hoc. To make a signed, notarized `Ribbon.dmg` (Developer ID certificate required), run `scripts/release.sh`.
 
 ## Permissions
 

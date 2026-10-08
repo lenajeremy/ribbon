@@ -1,6 +1,6 @@
 import Foundation
 
-/// Settings, read from the process environment first and then from the project's `.env`.
+/// Settings, read from the process environment, then a `.env` file (when building from source), then Settings › AI.
 struct Config {
     let apiKey: String
     /// Set FOCUS_MINUTES / BREAK_MINUTES to override every session type (handy for testing).
@@ -19,8 +19,8 @@ struct Config {
         func optional(_ key: String) -> Double? { env[key].flatMap { Double($0.trimmingCharacters(in: .whitespaces)) } }
         func number(_ key: String, _ fallback: Double) -> Double { optional(key) ?? fallback }
         return Config(
-            // The .env in this folder spells it OPEN_API_KEY; accept both.
-            apiKey: env["OPENAI_API_KEY"] ?? env["OPEN_API_KEY"] ?? "",
+            // Accept OPEN_API_KEY too; the key you enter in Settings › AI is the fallback.
+            apiKey: env["OPENAI_API_KEY"] ?? env["OPEN_API_KEY"] ?? APIKeyStore.read() ?? "",
             focusOverride: optional("FOCUS_MINUTES").map { $0 * 60 },
             breakOverride: optional("BREAK_MINUTES").map { $0 * 60 },
             checkSeconds: max(2, number("CHECK_SECONDS", 5)),
