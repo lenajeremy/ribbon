@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Ribbon, the AI time tracker for Mac</title>
-<meta name="description" content="Ribbon is a free, open-source AI time tracker for Mac. It records the apps and websites you use, shows where your day went, and blocks distractions when you need to focus.">
+<meta name="description" content="Ribbon is a free, open-source AI time tracker for Mac. It tracks the apps and websites you use, shows how you spent your day, and blocks distractions while you work.">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon.png">
 <style>
@@ -136,7 +136,7 @@
 
   .closing { text-align: center; padding: 96px 24px 40px; }
   .closing h2 { margin: 0; font-size: clamp(32px, 4.6vw, 48px); font-weight: 600; letter-spacing: -0.03em; line-height: 1.1; }
-  .closing p { margin: 14px auto 0; color: var(--ink-2); font-size: 18px; max-width: 32em; }
+  .closing p { margin: 14px auto 0; color: var(--ink-2); font-size: 18px; max-width: 37em; }
   footer { text-align: center; padding: 48px 24px 56px; font-size: 13px; color: var(--ink-2); }
 
   @media (max-width: 900px) {
@@ -170,7 +170,7 @@
       Free and open source
     </span>
     <h1>The AI time tracker for Mac.</h1>
-    <p class="lede">Ribbon records the apps and websites you use, shows where your day went, and blocks distractions when you need to focus.</p>
+    <p class="lede">Ribbon tracks the apps and websites you use, shows how you spent your day, and blocks distractions while you work.</p>
     <div class="actions">
       <a class="button" href="https://github.com/lenajeremy/ribbon/releases/latest/download/Ribbon.dmg">
         <svg viewBox="0 0 17 20" fill="currentColor" aria-hidden="true"><path d="M14.1 10.6c0-2.6 2.1-3.8 2.2-3.9-1.2-1.8-3.1-2-3.7-2-1.6-.2-3.1.9-3.9.9-.8 0-2-.9-3.4-.9-1.7 0-3.3 1-4.2 2.6-1.8 3.1-.5 7.7 1.3 10.2.9 1.2 1.9 2.6 3.2 2.6 1.3-.1 1.8-.8 3.3-.8 1.6 0 2 .8 3.4.8 1.4 0 2.3-1.3 3.1-2.5 1-1.4 1.4-2.8 1.4-2.9-.1 0-2.7-1-2.7-4.1zM11.5 3c.7-.9 1.2-2 1-3.2-1 0-2.3.7-3 1.6-.7.8-1.2 2-1.1 3.1 1.2.1 2.3-.6 3.1-1.5z"/></svg>
@@ -181,7 +181,7 @@
         View on GitHub
       </a>
     </div>
-    <p class="note">For macOS 14 and later, on Apple silicon and Intel.</p>
+    <p class="note">Requires macOS 14 or later. Works on Apple silicon and Intel Macs.</p>
   </header>
 
   <section class="shot" aria-label="Ribbon's Today view">
@@ -198,7 +198,7 @@
     <h2 class="head" id="features-head">What Ribbon does.</h2>
     <div class="bento">
       <article class="tile wide">
-        <p><strong>Tracks itself.</strong> Every app and website, timed to the second. Nothing to start or stop.</p>
+        <p><strong>Tracks your time automatically.</strong> Ribbon records every app and website you use, and for how long. You don't have to start or stop anything.</p>
         <div class="viz" aria-hidden="true">
           <div class="stats">
             <div><b>6h 44m</b><span>Tracked today</span></div>
@@ -209,7 +209,7 @@
         </div>
       </article>
       <article class="tile narrow">
-        <p><strong>Sorted by AI.</strong> New apps and sites land in the right category. Describe your own, and Ribbon fills it.</p>
+        <p><strong>Sorts your time into categories.</strong> AI puts each app and website into a category, like Code or Meetings. You can add your own categories too.</p>
         <ul class="viz sorted" aria-hidden="true">
           <li><span class="app"><span class="glyph"><svg viewBox="0 0 16 16"><rect x="2.5" y="2.5" width="11" height="11" rx="3"/></svg></span>Xcode</span><span class="tag"><i style="background:var(--blue)"></i>Code</span></li>
           <li><span class="app"><span class="glyph"><svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="5.75"/><path d="M2.25 8h11.5M8 2.25c1.6 1.6 2.4 3.5 2.4 5.75S9.6 12.15 8 13.75C6.4 12.15 5.6 10.25 5.6 8S6.4 3.85 8 2.25z"/></svg></span>figma.com</span><span class="tag"><i style="background:var(--orange)"></i>Design</span></li>
@@ -218,7 +218,7 @@
         </ul>
       </article>
       <article class="tile narrow">
-        <p><strong>Focus sessions.</strong> Choose what a session allows. Everything else is blocked until you're done.</p>
+        <p><strong>Blocks distractions while you focus.</strong> Start a focus session and choose the apps and websites you need. Ribbon blocks the rest until it ends.</p>
         <div class="viz focus" aria-hidden="true">
           <div class="ring">
             <svg viewBox="0 0 120 120"><circle class="track" cx="60" cy="60" r="52"/><circle class="done" cx="60" cy="60" r="52" stroke-dasharray="326.7" stroke-dashoffset="88"/></svg>
@@ -228,15 +228,15 @@
             <li><svg viewBox="0 0 20 20"><circle cx="10" cy="10" r="10" fill="var(--aqua)"/><path d="M6 10.2l2.6 2.6L14 7.4" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>Xcode</li>
             <li><svg viewBox="0 0 20 20"><circle cx="10" cy="10" r="10" fill="var(--aqua)"/><path d="M6 10.2l2.6 2.6L14 7.4" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>localhost</li>
             <li><svg viewBox="0 0 20 20"><circle cx="10" cy="10" r="10" fill="var(--aqua)"/><path d="M6 10.2l2.6 2.6L14 7.4" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>google.com</li>
-            <li class="off"><svg viewBox="0 0 20 20"><circle cx="10" cy="10" r="10" fill="var(--line)"/><path d="M6.5 10h7" stroke="var(--ink-2)" stroke-width="1.9" stroke-linecap="round"/></svg>youtube.com</li>
+            <li class="off"><svg viewBox="0 0 20 20"><circle cx="10" cy="10" r="10" fill="var(--line)"/><path d="M7 7l6 6M13 7l-6 6" stroke="var(--ink-2)" stroke-width="1.9" stroke-linecap="round"/></svg>youtube.com</li>
           </ul>
         </div>
       </article>
       <article class="tile wide">
-        <p><strong>Ask your day.</strong> Ask in plain words and get answers from your own log.</p>
+        <p><strong>Answers questions about your time.</strong> Ask things like “How long was I on YouTube this week?” and Ribbon tells you.</p>
         <div class="viz chat" aria-hidden="true">
-          <div class="ask">Where did my afternoon go?</div>
-          <div class="answer">Mostly into code: <b>2h 41m</b> in Xcode and on github.com. Your longest focus ran from 2:15 to 3:58 PM, and zoom.us took <b>39m</b>.</div>
+          <div class="ask">How did I spend this afternoon?</div>
+          <div class="answer">Mostly coding: <b>2h 41m</b> in Xcode and on github.com. You also spent <b>39m</b> in meetings on zoom.us.</div>
           <div class="composer">Ask about today<span class="send"><svg viewBox="0 0 16 16"><path d="M8 13V3M3.5 7.5L8 3l4.5 4.5"/></svg></span></div>
         </div>
       </article>
@@ -245,13 +245,13 @@
 
   <section class="closing">
     <h2>Free, open source, and private.</h2>
-    <p>Everything you track stays on your Mac. Add your own OpenAI API key in Settings to turn on the AI.</p>
+    <p>Ribbon saves your activity on your Mac. There's no account to create. To use the AI features, add your OpenAI API key in Settings. Ribbon then sends app and website names to OpenAI, and screenshots during focus sessions.</p>
     <div class="actions">
       <a class="button" href="https://github.com/lenajeremy/ribbon/releases/latest/download/Ribbon.dmg">Download for Mac</a>
-      <a class="button secondary" href="https://github.com/lenajeremy/ribbon">View the source</a>
+      <a class="button secondary" href="https://github.com/lenajeremy/ribbon">View on GitHub</a>
     </div>
   </section>
 
-  <footer>Ribbon is released under the MIT license.</footer>
+  <footer>Ribbon is open source under the MIT license.</footer>
 </body>
 </html>
