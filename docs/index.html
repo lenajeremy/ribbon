@@ -18,6 +18,7 @@
     --button: #0d0d0d;
     --button-ink: #ffffff;
     --window: #ffffff; --window-bar: #f6f6f6;
+    --fill: #f5f5f7; --green: #128a3a;
     --blue: #2a78d6; --orange: #eb6834; --aqua: #1baf7a; --yellow: #eda100; --violet: #4a3aa7; --magenta: #e87ba4;
   }
   @media (prefers-color-scheme: dark) {
@@ -25,6 +26,7 @@
       --page: #121212; --band: #1c1c1e; --ink: #ececec; --ink-2: #9b9b9f; --line: #2e2e30; --card: #232325;
       --button: #ececec; --button-ink: #121212;
       --window: #212121; --window-bar: #2a2a2a;
+      --fill: #313134; --green: #2a9d4f;
       --blue: #3987e5; --orange: #d95926; --aqua: #199e70; --yellow: #c98500; --violet: #9085e9; --magenta: #d55181;
     }
   }
@@ -84,25 +86,70 @@
   .window .bar i { width: 12px; height: 12px; border-radius: 50%; display: block; }
   .window img { display: block; width: 100%; height: auto; }
 
-  .features { background: var(--band); margin-top: 96px; padding: 88px 24px; }
-  .grid { max-width: 1080px; margin: 0 auto; display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
-  .card { background: var(--card); border-radius: 22px; padding: 34px 34px 36px; }
-  .icon { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; }
-  .icon svg { width: 22px; height: 22px; stroke: #fff; fill: none; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
-  .card h2 { margin: 22px 0 8px; font-size: 24px; line-height: 1.2; font-weight: 600; letter-spacing: -0.02em; }
-  .card p { margin: 0; color: var(--ink-2); font-size: 17px; line-height: 1.5; max-width: 30em; }
+  .features { background: var(--band); margin-top: 96px; padding: 96px 24px 104px; }
+  .features h2.head { max-width: 1080px; margin: 0 auto 40px; font-size: clamp(32px, 4.6vw, 48px); font-weight: 600; letter-spacing: -0.03em; line-height: 1.1; }
+  .bento { max-width: 1080px; margin: 0 auto; display: grid; grid-template-columns: repeat(12, 1fr); gap: 20px; }
+  .tile { grid-column: span 6; display: flex; flex-direction: column; gap: 44px; background: var(--card); border-radius: 28px; padding: 40px 40px 44px; overflow: hidden; }
+  .tile.wide { grid-column: span 7; }
+  .tile.narrow { grid-column: span 5; }
+  .tile > p { margin: 0; max-width: 24em; font-size: clamp(19px, 1.8vw, 21px); line-height: 1.38; font-weight: 600; letter-spacing: -0.016em; color: var(--ink-2); }
+  .tile > p strong { color: var(--ink); font-weight: 600; }
+  .viz { margin-top: auto; font-size: 15.5px; }
+
+  .stats { display: flex; gap: 48px; }
+  .stats b { display: block; font-size: 44px; line-height: 1; font-weight: 600; letter-spacing: -0.035em; font-variant-numeric: tabular-nums; }
+  .stats span { display: block; margin-top: 8px; font-size: 14px; color: var(--ink-2); }
+  .ribbon { display: flex; gap: 2px; height: 40px; margin-top: 30px; border-radius: 10px; overflow: hidden; background: var(--fill); }
+  .ribbon i { display: block; min-width: 0; }
+  .axis { display: flex; justify-content: space-between; margin-top: 10px; font-size: 12.5px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+
+  .sorted { list-style: none; margin: 0; padding: 0; }
+  .sorted li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 11px 0; border-top: 1px solid var(--line); }
+  .sorted li:first-child { border-top: 0; padding-top: 0; }
+  .sorted li:last-child { padding-bottom: 0; }
+  .app { display: flex; align-items: center; gap: 12px; font-weight: 500; }
+  .glyph { flex: none; width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; background: var(--fill); color: var(--ink-2); }
+  .glyph svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.6; }
+  .tag { display: inline-flex; align-items: center; gap: 7px; padding: 5px 12px; border-radius: 999px; background: var(--fill); font-size: 13.5px; white-space: nowrap; }
+  .tag i { width: 8px; height: 8px; border-radius: 2.5px; }
+
+  .focus { display: flex; align-items: center; gap: 32px; }
+  .ring { position: relative; flex: none; width: 136px; height: 136px; }
+  .ring svg { width: 100%; height: 100%; transform: rotate(-90deg); fill: none; stroke-width: 10; }
+  .ring .track { stroke: var(--fill); }
+  .ring .done { stroke: var(--aqua); stroke-linecap: round; }
+  .clock { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; }
+  .clock b { font-size: 26px; font-weight: 600; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; line-height: 1.1; }
+  .clock span { font-size: 12.5px; color: var(--ink-2); }
+  .rules { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+  .rules li { display: flex; align-items: center; gap: 10px; }
+  .rules svg { flex: none; width: 20px; height: 20px; }
+  .rules .off { color: var(--ink-2); }
+
+  .chat { display: flex; flex-direction: column; gap: 16px; }
+  .ask { align-self: flex-end; max-width: 80%; padding: 10px 16px; border-radius: 20px; background: var(--fill); }
+  .answer { max-width: 32em; line-height: 1.5; }
+  .answer b { font-weight: 600; }
+  .composer { display: flex; align-items: center; justify-content: space-between; height: 50px; margin-top: 8px; padding: 0 8px 0 20px; border: 1px solid var(--line); border-radius: 999px; color: var(--ink-2); box-shadow: 0 4px 16px -6px rgba(0,0,0,.08); }
+  .send { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; background: var(--ink); color: var(--page); }
+  .send svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
 
   .closing { text-align: center; padding: 96px 24px 40px; }
   .closing h2 { margin: 0; font-size: clamp(32px, 4.6vw, 48px); font-weight: 600; letter-spacing: -0.03em; line-height: 1.1; }
   .closing p { margin: 14px auto 0; color: var(--ink-2); font-size: 18px; max-width: 32em; }
   footer { text-align: center; padding: 48px 24px 56px; font-size: 13px; color: var(--ink-2); }
 
+  @media (max-width: 900px) {
+    .tile, .tile.wide, .tile.narrow { grid-column: 1 / -1; }
+  }
   @media (max-width: 760px) {
-    .grid { grid-template-columns: 1fr; }
     .hero { padding-top: 48px; }
     .shot { margin-top: 44px; }
-    .features { margin-top: 64px; padding: 56px 18px; }
-    .card { padding: 26px; }
+    .features { margin-top: 64px; padding: 64px 16px 72px; }
+    .features h2.head { margin-bottom: 28px; }
+    .tile { padding: 30px 26px 32px; border-radius: 24px; gap: 36px; }
+    .stats { gap: 32px; }
+    .stats b { font-size: 36px; }
   }
 </style>
 </head>
@@ -135,7 +182,6 @@
       </a>
     </div>
     <p class="note">For macOS 14 and later, on Apple silicon and Intel.</p>
-    </div>
   </header>
 
   <section class="shot" aria-label="Ribbon's Today view">
@@ -148,27 +194,51 @@
     </div>
   </section>
 
-  <section class="features">
-    <div class="grid">
-      <article class="card">
-        <div class="icon" style="background:var(--blue)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
-        <h2>Tracks itself</h2>
-        <p>Every app and website, timed to the second. Nothing to start or stop, and your data stays on your Mac.</p>
+  <section class="features" aria-labelledby="features-head">
+    <h2 class="head" id="features-head">What Ribbon does.</h2>
+    <div class="bento">
+      <article class="tile wide">
+        <p><strong>Tracks itself.</strong> Every app and website, timed to the second. Nothing to start or stop.</p>
+        <div class="viz" aria-hidden="true">
+          <div class="stats">
+            <div><b>6h 44m</b><span>Tracked today</span></div>
+            <div><b>81%</b><span>Productive</span></div>
+          </div>
+          <div class="ribbon"><i style="flex:12;background:var(--aqua)"></i><i style="flex:30;background:var(--orange)"></i><i style="flex:48;background:var(--blue)"></i><i style="flex:6"></i><i style="flex:30;background:var(--blue)"></i><i style="flex:12"></i><i style="flex:40;background:var(--violet)"></i><i style="flex:50"></i><i style="flex:14;background:var(--yellow)"></i><i style="flex:8;background:var(--green)"></i><i style="flex:70;background:var(--blue)"></i><i style="flex:10;background:var(--yellow)"></i><i style="flex:30;background:var(--blue)"></i><i style="flex:15"></i><i style="flex:15;background:var(--green)"></i><i style="flex:70;background:var(--blue)"></i><i style="flex:10;background:var(--yellow)"></i><i style="flex:70"></i></div>
+          <div class="axis"><span>9 AM</span><span>12 PM</span><span>3 PM</span><span>6 PM</span></div>
+        </div>
       </article>
-      <article class="card">
-        <div class="icon" style="background:var(--orange)"><svg viewBox="0 0 24 24"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M18.5 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/></svg></div>
-        <h2>Sorted by AI</h2>
-        <p>New apps and sites land in the right category on their own. Make your own categories by describing them.</p>
+      <article class="tile narrow">
+        <p><strong>Sorted by AI.</strong> New apps and sites land in the right category. Describe your own, and Ribbon fills it.</p>
+        <ul class="viz sorted" aria-hidden="true">
+          <li><span class="app"><span class="glyph"><svg viewBox="0 0 16 16"><rect x="2.5" y="2.5" width="11" height="11" rx="3"/></svg></span>Xcode</span><span class="tag"><i style="background:var(--blue)"></i>Code</span></li>
+          <li><span class="app"><span class="glyph"><svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="5.75"/><path d="M2.25 8h11.5M8 2.25c1.6 1.6 2.4 3.5 2.4 5.75S9.6 12.15 8 13.75C6.4 12.15 5.6 10.25 5.6 8S6.4 3.85 8 2.25z"/></svg></span>figma.com</span><span class="tag"><i style="background:var(--orange)"></i>Design</span></li>
+          <li><span class="app"><span class="glyph"><svg viewBox="0 0 16 16"><rect x="2.5" y="2.5" width="11" height="11" rx="3"/></svg></span>zoom.us</span><span class="tag"><i style="background:var(--violet)"></i>Meetings</span></li>
+          <li><span class="app"><span class="glyph"><svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="5.75"/><path d="M2.25 8h11.5M8 2.25c1.6 1.6 2.4 3.5 2.4 5.75S9.6 12.15 8 13.75C6.4 12.15 5.6 10.25 5.6 8S6.4 3.85 8 2.25z"/></svg></span>youtube.com</span><span class="tag"><i style="background:var(--magenta)"></i>Entertainment</span></li>
+        </ul>
       </article>
-      <article class="card">
-        <div class="icon" style="background:var(--aqua)"><svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9v4"/><path d="M9.5 2.5h5"/></svg></div>
-        <h2>Focus sessions</h2>
-        <p>Choose the apps and websites a session allows. Everything else is blocked until you're done.</p>
+      <article class="tile narrow">
+        <p><strong>Focus sessions.</strong> Choose what a session allows. Everything else is blocked until you're done.</p>
+        <div class="viz focus" aria-hidden="true">
+          <div class="ring">
+            <svg viewBox="0 0 120 120"><circle class="track" cx="60" cy="60" r="52"/><circle class="done" cx="60" cy="60" r="52" stroke-dasharray="326.7" stroke-dashoffset="88"/></svg>
+            <div class="clock"><b>18:24</b><span>Coding</span></div>
+          </div>
+          <ul class="rules">
+            <li><svg viewBox="0 0 20 20"><circle cx="10" cy="10" r="10" fill="var(--aqua)"/><path d="M6 10.2l2.6 2.6L14 7.4" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>Xcode</li>
+            <li><svg viewBox="0 0 20 20"><circle cx="10" cy="10" r="10" fill="var(--aqua)"/><path d="M6 10.2l2.6 2.6L14 7.4" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>localhost</li>
+            <li><svg viewBox="0 0 20 20"><circle cx="10" cy="10" r="10" fill="var(--aqua)"/><path d="M6 10.2l2.6 2.6L14 7.4" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>google.com</li>
+            <li class="off"><svg viewBox="0 0 20 20"><circle cx="10" cy="10" r="10" fill="var(--line)"/><path d="M6.5 10h7" stroke="var(--ink-2)" stroke-width="1.9" stroke-linecap="round"/></svg>youtube.com</li>
+          </ul>
+        </div>
       </article>
-      <article class="card">
-        <div class="icon" style="background:var(--violet)"><svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 0 1-11.6 7.1L4 20l1-4.2A8 8 0 1 1 20 12z"/></svg></div>
-        <h2>Ask your day</h2>
-        <p>Ask “Where did my afternoon go?” and get answers from your own log, the way you'd ask a chat.</p>
+      <article class="tile wide">
+        <p><strong>Ask your day.</strong> Ask in plain words and get answers from your own log.</p>
+        <div class="viz chat" aria-hidden="true">
+          <div class="ask">Where did my afternoon go?</div>
+          <div class="answer">Mostly into code: <b>2h 41m</b> in Xcode and on github.com. Your longest focus ran from 2:15 to 3:58 PM, and zoom.us took <b>39m</b>.</div>
+          <div class="composer">Ask about today<span class="send"><svg viewBox="0 0 16 16"><path d="M8 13V3M3.5 7.5L8 3l4.5 4.5"/></svg></span></div>
+        </div>
       </article>
     </div>
   </section>
