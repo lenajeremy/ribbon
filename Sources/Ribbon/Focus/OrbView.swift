@@ -31,7 +31,7 @@ struct OverlayView: View {
                     phaseStart: model.phaseStart,
                     phaseEnd: model.phaseEnd,
                     pausedAt: model.pausedAt,
-                    level: model.audioLevel
+                    visible: model.visible
                 )
                 .scaleEffect(model.holding ? 0.9 : 1)
                 .position(center)
@@ -50,6 +50,8 @@ struct OverlayView: View {
 }
 
 /// The glowing orb and its timer ring. Animatable so the size grows smoothly when it floats to the front.
+/// The orb is drawn once as an image. During a focus session or a nudge it breathes (a slow scale run by
+/// Core Animation, outside Ribbon), and the ring moves once a second. While the orb is hidden, nothing updates.
 struct OrbView: View, Animatable {
     var core: CGFloat
     let phase: Phase
@@ -58,7 +60,7 @@ struct OrbView: View, Animatable {
     let phaseStart: Date
     let phaseEnd: Date
     let pausedAt: Date?
-    let level: @MainActor () -> Double
+    let visible: Bool
 
     var animatableData: CGFloat {
         get { core }
@@ -69,19 +71,16 @@ struct OrbView: View, Animatable {
         let palette = Palette.of(phase, drifting: drifting, paused: paused)
         let ringDiameter = OrbLayout.ringDiameter(core)
         let lineWidth = max(2.5, core * 0.035)
+        // Only a running focus session, or a nudge, makes the orb move.
+        let breathing = visible && (drifting || (phase == .focus && !paused))
 
-        TimelineView(.animation(minimumInterval: 1.0 / 30)) { context in
-            let t = context.date.timeIntervalSinceReferenceDate
-            let loudness = level()
-            let energy = drifting ? 2.4 : (phase == .idle || paused ? 0.4 : 1)
-            let breathe = 1 + 0.035 * sin(t * 1.4) + 0.16 * loudness
+        ZStack {
+            Circle()
+                .fill(palette.a.opacity(phase == .idle ? 0.3 : 0.5))
+                .frame(width: core * 1.35, height: core * 1.35)
+                .blur(radius: core * 0.35)
 
-            ZStack {
-                Circle()
-                    .fill(palette.a.opacity(phase == .idle ? 0.3 : 0.5 + 0.35 * loudness))
-                    .frame(width: core * 1.35, height: core * 1.35)
-                    .blur(radius: core * 0.35)
-
+            TimelineView(.animation(minimumInterval: 1, paused: !visible || phase == .idle)) { context in
                 ZStack {
                     Circle().stroke(palette.ring.opacity(0.16), lineWidth: lineWidth)
                     Circle()
@@ -90,45 +89,14 @@ struct OrbView: View, Animatable {
                         .rotationEffect(.degrees(-90))
                         .shadow(color: palette.a, radius: lineWidth * 1.5)
                 }
-                .frame(width: ringDiameter - lineWidth, height: ringDiameter - lineWidth)
-
-                ZStack {
-                    Circle().fill(RadialGradient(
-                        colors: [palette.c, palette.a, palette.b],
-                        center: UnitPoint(x: 0.38, y: 0.32), startRadius: 0, endRadius: core * 0.75))
-                    Circle()
-                        .fill(AngularGradient(colors: [palette.a, palette.b, palette.c, palette.a], center: .center))
-                        .rotationEffect(.radians(t * 0.7 * energy))
-                        .blur(radius: core * 0.16)
-                        .opacity(0.75)
-                    Circle()
-                        .fill(palette.c)
-                        .frame(width: core * 0.5, height: core * 0.5)
-                        .offset(x: cos(t * 0.8 * energy) * core * 0.2, y: sin(t * 1.1 * energy) * core * 0.18)
-                        .blur(radius: core * 0.14)
-                        .blendMode(.screen)
-                    Circle()
-                        .fill(palette.b)
-                        .frame(width: core * 0.45, height: core * 0.45)
-                        .offset(x: sin(t * 0.65 * energy + 1) * core * 0.22, y: cos(t * 0.9 * energy + 2) * core * 0.2)
-                        .blur(radius: core * 0.14)
-                        .opacity(0.7)
-                    Circle().fill(RadialGradient(
-                        colors: [.clear, .clear, .black.opacity(0.3)],
-                        center: .center, startRadius: 0, endRadius: core * 0.5))
-                    Ellipse()
-                        .fill(LinearGradient(colors: [.white.opacity(0.6), .white.opacity(0)], startPoint: .top, endPoint: .bottom))
-                        .frame(width: core * 0.55, height: core * 0.3)
-                        .offset(y: -core * 0.25)
-                }
-                .frame(width: core, height: core)
-                .clipShape(Circle())
-                .drawingGroup()
-                .opacity(phase == .idle ? 0.8 : 1)
-                .scaleEffect(breathe)
             }
-            .frame(width: ringDiameter, height: ringDiameter)
+            .frame(width: ringDiameter - lineWidth, height: ringDiameter - lineWidth)
+
+            OrbBreathing(core: core, palette: palette, idle: phase == .idle,
+                         breath: breathing ? (drifting ? .nudge : .focus) : nil)
+                .frame(width: core, height: core)
         }
+        .frame(width: ringDiameter, height: ringDiameter)
     }
 
     private func remaining(at date: Date) -> Double {
@@ -139,7 +107,127 @@ struct OrbView: View, Animatable {
     }
 }
 
-struct Palette {
+/// How the orb breathes: how far it swells, and how long one breath takes.
+struct Breath: Equatable {
+    let depth: CGFloat
+    let period: TimeInterval
+    static let focus = Breath(depth: 0.03, period: 4.8)
+    static let nudge = Breath(depth: 0.05, period: 2.4)
+}
+
+/// Shows the orb as one still image and lets Core Animation scale it. The breathing runs in the system's
+/// renderer, so it costs Ribbon nothing per frame. The image is redrawn only when the size or colors change.
+private struct OrbBreathing: NSViewRepresentable {
+    let core: CGFloat
+    let palette: Palette
+    let idle: Bool
+    let breath: Breath?
+
+    final class Coordinator {
+        var drawn: OrbBody?
+    }
+
+    func makeCoordinator() -> Coordinator { Coordinator() }
+
+    func makeNSView(context: Context) -> OrbLayerView { OrbLayerView() }
+
+    func updateNSView(_ view: OrbLayerView, context: Context) {
+        let body = OrbBody(core: core, palette: palette, idle: idle)
+        if context.coordinator.drawn != body {
+            context.coordinator.drawn = body
+            let renderer = ImageRenderer(content: body)
+            renderer.scale = view.window?.backingScaleFactor ?? NSScreen.main?.backingScaleFactor ?? 2
+            view.orb.contents = renderer.cgImage
+            view.orb.contentsScale = renderer.scale
+        }
+        view.breathe(breath)
+    }
+}
+
+/// A view holding one Core Animation layer: the orb image, scaled around its center.
+final class OrbLayerView: NSView {
+    let orb = CALayer()
+    private var breath: Breath?
+
+    init() {
+        super.init(frame: .zero)
+        layer = CALayer()
+        wantsLayer = true
+        orb.contentsGravity = .resizeAspect
+        layer?.addSublayer(orb)
+    }
+
+    required init?(coder: NSCoder) { fatalError("init(coder:) is not used") }
+
+    override func layout() {
+        super.layout()
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        orb.bounds = CGRect(origin: .zero, size: bounds.size)
+        orb.position = CGPoint(x: bounds.midX, y: bounds.midY)
+        CATransaction.commit()
+    }
+
+    func breathe(_ breath: Breath?) {
+        guard breath != self.breath else { return }
+        self.breath = breath
+        orb.removeAnimation(forKey: "breathe")
+        guard let breath else { return }
+        let animation = CABasicAnimation(keyPath: "transform.scale")
+        animation.fromValue = 1 - breath.depth
+        animation.toValue = 1 + breath.depth
+        animation.duration = breath.period / 2
+        animation.autoreverses = true
+        animation.repeatCount = .infinity
+        animation.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+        orb.add(animation, forKey: "breathe")
+    }
+}
+
+/// The orb itself, still. It's only redrawn when its size or colors change.
+private struct OrbBody: View, Equatable {
+    let core: CGFloat
+    let palette: Palette
+    let idle: Bool
+
+    var body: some View {
+        ZStack {
+            Circle().fill(RadialGradient(
+                colors: [palette.c, palette.a, palette.b],
+                center: UnitPoint(x: 0.38, y: 0.32), startRadius: 0, endRadius: core * 0.75))
+            Circle()
+                .fill(AngularGradient(colors: [palette.a, palette.b, palette.c, palette.a], center: .center))
+                .rotationEffect(.degrees(40))
+                .blur(radius: core * 0.16)
+                .opacity(0.75)
+            Circle()
+                .fill(palette.c)
+                .frame(width: core * 0.5, height: core * 0.5)
+                .offset(x: -core * 0.12, y: -core * 0.1)
+                .blur(radius: core * 0.14)
+                .blendMode(.screen)
+            Circle()
+                .fill(palette.b)
+                .frame(width: core * 0.45, height: core * 0.45)
+                .offset(x: core * 0.16, y: core * 0.14)
+                .blur(radius: core * 0.14)
+                .opacity(0.7)
+            Circle().fill(RadialGradient(
+                colors: [.clear, .clear, .black.opacity(0.3)],
+                center: .center, startRadius: 0, endRadius: core * 0.5))
+            Ellipse()
+                .fill(LinearGradient(colors: [.white.opacity(0.6), .white.opacity(0)], startPoint: .top, endPoint: .bottom))
+                .frame(width: core * 0.55, height: core * 0.3)
+                .offset(y: -core * 0.25)
+        }
+        .frame(width: core, height: core)
+        .clipShape(Circle())
+        .drawingGroup()
+        .opacity(idle ? 0.8 : 1)
+    }
+}
+
+struct Palette: Equatable {
     let a: Color, b: Color, c: Color, ring: Color
 
     static func of(_ phase: Phase, drifting: Bool, paused: Bool) -> Palette {

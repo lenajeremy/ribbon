@@ -52,7 +52,6 @@ import SwiftUI
         self.assistant = assistant
         self.settings = settings
         self.profiles = profiles
-        model.audioLevel = { [speaker] in speaker.level() }
     }
 
     func start(task: String?) {
@@ -165,6 +164,7 @@ import SwiftUI
 
     func updateOverlayVisibility() {
         let show = settings.showOrbWhenIdle || model.phase != .idle || panel != nil
+        if model.visible != show { model.visible = show }
         if show && !overlay.isVisible { overlay.orderFrontRegardless() }
         if !show && overlay.isVisible { overlay.orderOut(nil) }
     }

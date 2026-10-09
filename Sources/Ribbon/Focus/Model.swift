@@ -24,11 +24,11 @@ enum Phase: Equatable {
     /// The orb is being held down to wave off a nudge.
     var holding = false
     var panelOpen = false
+    /// The orb's window is on screen. While it isn't, the orb doesn't animate.
+    var visible = false
     var muted = false
     /// A problem worth showing on hover, like a missing permission or a failing API.
     var status: String?
-
-    @ObservationIgnored var audioLevel: @MainActor () -> Double = { 0 }
 
     var paused: Bool { pausedAt != nil }
 

@@ -2,6 +2,12 @@
 
 Ribbon shows the section for a new version when it offers you the update.
 
+## 3.3
+
+- **Uses far less CPU.** Ribbon used about 9% of your CPU just running in the background. Now it uses almost none: the orb no longer redraws itself when it's hidden or when no focus session is running, and its breathing during a session is handled by macOS.
+- The orb's animation is simpler. It breathes slowly during a focus session and a little faster while it nudges you, and stays still otherwise. It no longer pulses with its voice.
+- Ribbon asks your browser for the current tab's address only when the tab may have changed, instead of every 5 seconds.
+
 ## 3.2
 
 - **More accurate context switches.** A switch now counts only when you stay in the new app or website for at least 10 seconds, so quick glances don't count.

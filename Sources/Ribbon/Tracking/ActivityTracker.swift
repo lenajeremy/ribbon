@@ -32,9 +32,9 @@ struct FrontActivity: Equatable {
     /// When the current stretch of uninterrupted work began (reset by 5 minutes away).
     private(set) var streakStart: Date?
     private var lastActive: Date?
-    private var lastURL: (bundle: String, title: String, at: Date, url: String)?
-    /// The last address a browser did give, for the moments when asking it fails.
-    private var lastGoodURL: (bundle: String, at: Date, url: String)?
+    private var addresses = AddressCache()
+    /// The app that was in front on the last tick, to notice coming back to a browser.
+    private var lastFront: String?
     private var screenLocked = false
     private var screensAsleep = false
 
@@ -85,10 +85,12 @@ struct FrontActivity: Equatable {
         guard let app = NSWorkspace.shared.frontmostApplication else { return }
 
         let bundle = app.bundleIdentifier ?? app.localizedName ?? "unknown"
+        let cameBack = lastFront != bundle
+        lastFront = bundle
         var observation = FrontActivity(bundleID: bundle, app: app.localizedName ?? bundle,
                                       title: WindowInfo.frontTitle(pid: app.processIdentifier) ?? "", url: "", domain: "")
         if BrowserBridge.isBrowser(bundle) {
-            observation.url = browserURL(bundle, title: observation.title, now: now)
+            observation.url = browserURL(bundle, title: observation.title, now: now, cameBack: cameBack)
             observation.domain = Domains.host(of: observation.url)
         }
         let same = current?.observation == observation
@@ -124,17 +126,10 @@ struct FrontActivity: Equatable {
         self.current = nil
     }
 
-    private func browserURL(_ bundle: String, title: String, now: Date) -> String {
-        if let last = lastURL, last.bundle == bundle, last.title == title, now.timeIntervalSince(last.at) < 5 { return last.url }
-        var url = browsers.url(of: bundle) ?? ""
-        if !url.isEmpty {
-            lastGoodURL = (bundle, now, url)
-        } else if let good = lastGoodURL, good.bundle == bundle, now.timeIntervalSince(good.at) < 30 {
-            // The browser sometimes doesn't answer for a moment. That isn't leaving the page.
-            url = good.url
-        }
-        lastURL = (bundle, title, now, url)
-        return url
+    /// Asks the browser for the tab's address only when the page may have changed. See `AddressCache`.
+    private func browserURL(_ bundle: String, title: String, now: Date, cameBack: Bool) -> String {
+        if let url = addresses.cached(bundle: bundle, title: title, now: now, cameBack: cameBack) { return url }
+        return addresses.record(bundle: bundle, title: title, now: now, answer: browsers.url(of: bundle) ?? "")
     }
 
     private static let videoApps: Set<String> = ["com.apple.TV", "com.apple.QuickTimePlayerX", "com.colliderli.iina", "org.videolan.vlc"]
@@ -143,5 +138,43 @@ struct FrontActivity: Equatable {
 
     static func isPassive(_ o: FrontActivity, category: String) -> Bool {
         category == "meetings" || videoApps.contains(o.bundleID) || Domains.suffixes(o.domain).contains { videoSites.contains($0) }
+    }
+}
+
+/// Remembers the browser's address so Ribbon asks again only when the page may have changed: you came back
+/// to the browser, its window title changed (switching tabs changes it), or a while passed. Asking a browser
+/// is the slow part of tracking.
+struct AddressCache {
+    /// How long an address is trusted while the window title stays the same.
+    static let recheck: TimeInterval = 30
+    /// The same, for a window whose title doesn't follow its tab, like a Chrome window you named.
+    static let recheckFixedTitle: TimeInterval = 5
+
+    private var last: (bundle: String, title: String, at: Date, url: String)?
+    private var lastGood: (bundle: String, title: String, at: Date, url: String)?
+    private(set) var fixedTitles: Set<String> = []
+
+    /// The address to use without asking, or nil when it's time to ask the browser.
+    func cached(bundle: String, title: String, now: Date, cameBack: Bool) -> String? {
+        guard !cameBack, let last, last.bundle == bundle, last.title == title else { return nil }
+        let limit = fixedTitles.contains(bundle + "|" + title) ? Self.recheckFixedTitle : Self.recheck
+        return now.timeIntervalSince(last.at) < limit ? last.url : nil
+    }
+
+    /// Records the browser's answer (empty when it didn't answer) and returns the address to use.
+    mutating func record(bundle: String, title: String, now: Date, answer: String) -> String {
+        var url = answer
+        if !url.isEmpty {
+            // A new page under the same title: this window's title doesn't follow its tab.
+            if let last, last.bundle == bundle, last.title == title, !last.url.isEmpty, last.url != url {
+                fixedTitles.insert(bundle + "|" + title)
+            }
+            lastGood = (bundle, title, now, url)
+        } else if let good = lastGood, good.bundle == bundle, good.title == title || now.timeIntervalSince(good.at) < Self.recheck {
+            // The browser sometimes doesn't answer for a moment. That isn't leaving the page.
+            url = good.url
+        }
+        last = (bundle, title, now, url)
+        return url
     }
 }
