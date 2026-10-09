@@ -2,6 +2,11 @@
 
 Ribbon shows the section for a new version when it offers you the update.
 
+## 3.5
+
+- Fixed: on days you were active until midnight, the day's ribbon showed only four hours and cut off the evening. It now runs to midnight.
+- Fixed: a few seconds of activity just after midnight no longer stretch the next day's ribbon back to midnight. It starts at your first real activity.
+
 ## 3.4
 
 - **Check-ins.** Every 30 minutes, Ribbon looks at your day and sends a notification. If you've drifted to things like YouTube, it nudges you back, naming what pulled you away and what you're working toward. If it's going well, or you're turning a slow day around, it encourages you, at most once an hour. It stays quiet during focus sessions and while you're away. Turn it off or change how often in Settings › General.

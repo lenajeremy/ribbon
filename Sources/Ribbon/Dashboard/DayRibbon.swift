@@ -92,10 +92,19 @@ struct DayRibbon: View {
     }
 
     /// Whole hours from the first activity to the last (or now), at least four.
+    /// From the hour the first activity started to the hour the last one ended, counted from the start of the day,
+    /// so a night that runs to midnight ends the ribbon at 24 rather than 0. Slivers under a minute (the seconds of
+    /// last night that spill past midnight) don't decide where the ribbon starts.
     static func hourRange(for days: [DayReport], showNow: Bool) -> ClosedRange<Int> {
         let calendar = Calendar.current
-        let starts = days.compactMap { $0.segments.first.map { calendar.component(.hour, from: $0.start) } }
-        var ends = days.compactMap { $0.segments.map(\.end).max().map { calendar.component(.hour, from: $0) + 1 } }
+        func hours(_ date: Date, into day: Date) -> Double { date.timeIntervalSince(calendar.startOfDay(for: day)) / 3600 }
+        var starts: [Int] = [], ends: [Int] = []
+        for report in days {
+            guard let first = report.segments.first(where: { $0.duration >= 60 }) ?? report.segments.first,
+                  let last = report.segments.map(\.end).max() else { continue }
+            starts.append(Int(hours(first.start, into: report.day).rounded(.down)))
+            ends.append(Int(hours(last, into: report.day).rounded(.up)))
+        }
         if showNow { ends.append(calendar.component(.hour, from: Date()) + 1) }
         let first = starts.min() ?? 9
         let last = min(24, max(ends.max() ?? 17, first + 4))
