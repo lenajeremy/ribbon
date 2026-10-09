@@ -12,3 +12,15 @@ BUILT=$(defaults read "$PWD/dist/Ribbon.app/Contents/Info" CFBundleShortVersionS
 [[ -f dist/Ribbon.zip && -f dist/Ribbon.dmg ]] || { echo "dist/Ribbon.zip or dist/Ribbon.dmg is missing. Run scripts/release.sh first." >&2; exit 1; }
 
 gh release create "v$RIBBON_VERSION" dist/Ribbon.dmg dist/Ribbon.zip --title "Ribbon $RIBBON_VERSION" --notes "$NOTES"
+
+# Point the Homebrew cask (lenajeremy/homebrew-tap) at this release.
+SHA=$(shasum -a 256 dist/Ribbon.dmg | cut -d' ' -f1)
+TAP=$(mktemp -d)
+gh repo clone lenajeremy/homebrew-tap "$TAP" -- --quiet
+sed -i '' -e "s/^  version \".*\"/  version \"$RIBBON_VERSION\"/" -e "s/^  sha256 \".*\"/  sha256 \"$SHA\"/" "$TAP/Casks/ribbon.rb"
+if ! git -C "$TAP" diff --quiet; then
+    git -C "$TAP" commit --quiet -am "Ribbon $RIBBON_VERSION"
+    git -C "$TAP" push --quiet
+    echo "Updated the Homebrew cask to $RIBBON_VERSION."
+fi
+rm -rf "$TAP"

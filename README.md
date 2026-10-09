@@ -18,6 +18,12 @@ The AI time tracker for Mac. Ribbon tracks the apps and websites you use, shows 
 
 Get the latest notarized build: **[Ribbon.dmg](https://github.com/lenajeremy/ribbon/releases/latest/download/Ribbon.dmg)**. Open it, drag Ribbon to Applications, and add your OpenAI API key in Settings › AI.
 
+Or install it with [Homebrew](https://brew.sh):
+
+```sh
+brew install --cask lenajeremy/tap/ribbon
+```
+
 Ribbon keeps itself up to date. It checks this repository's releases every few hours, shows you what's new, and installs the new version when it restarts. Updates are installed only if they're signed by the same developer. To turn this off, go to Settings › General. See what changed in each version in [CHANGELOG.md](CHANGELOG.md).
 
 ## Build from source
