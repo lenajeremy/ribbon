@@ -2,6 +2,12 @@
 
 Ribbon shows the section for a new version when it offers you the update.
 
+## 3.4
+
+- **Check-ins.** Every 30 minutes, Ribbon looks at your day and sends a notification. If you've drifted to things like YouTube, it nudges you back, naming what pulled you away and what you're working toward. If it's going well, or you're turning a slow day around, it encourages you, at most once an hour. It stays quiet during focus sessions and while you're away. Turn it off or change how often in Settings › General.
+- Settings › Permissions now shows whether Ribbon can send notifications. Check-ins and break reminders need them.
+- Clicking one of Ribbon's notifications opens Today.
+
 ## 3.3
 
 - **Uses far less CPU.** Ribbon used about 9% of your CPU just running in the background. Now it uses almost none: the orb no longer redraws itself when it's hidden or when no focus session is running, and its breathing during a session is handled by macOS.

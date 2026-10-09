@@ -77,6 +77,43 @@ import Foundation
         return OpenAI.outputText(json)
     }
 
+    // MARK: Check-ins
+
+    /// A notification's title and text for a check-in, from the facts about your day.
+    func checkIn(_ facts: [String: Any]) async throws -> (title: String, body: String) {
+        let data = try JSONSerialization.data(withJSONObject: facts, options: [.sortedKeys])
+        let schema: [String: Any] = [
+            "type": "object", "additionalProperties": false, "required": ["title", "body"],
+            "properties": ["title": ["type": "string"], "body": ["type": "string"]],
+        ]
+        let json = try await openai.respond([
+            "model": model, "reasoning": ["effort": "low"],
+            "instructions": """
+                You write one short Mac notification from Ribbon, a time tracker, to help the person stay on track today. \
+                You get facts about their day so far and the last few minutes.
+                - "why" says what Ribbon noticed. Follow it.
+                - kind "nudge": they're drifting. Name what pulled them away and for how long, from the facts. Then give a short, \
+                  genuine push about what they're working toward (use working_toward if it has anything), and one concrete \
+                  thing to do right now. Only call something a distraction if its kind is "distracting". Never describe \
+                  productive or neutral work as a distraction; if nothing distracting stands out, say the day has been slow.
+                - kind "encourage": it's going well. Say specifically what went well, from the facts, and tell them to keep going. \
+                  If they're turning the day around, acknowledge the slow start in a few words and praise the comeback.
+                - Talk to them as "you". Honest, direct and warm. Never mean, never shaming. Plain words. \
+                  No emojis, no hashtags, no famous quotes.
+                - Use their real numbers ("52 minutes", "1h 10m") and the app and site names as given. Talk about what they did, \
+                  not about categories: don't use words like "productive", "neutral" or "distracting".
+                - title: at most 6 words. body: at most 2 sentences and 180 characters.
+                """,
+            "input": String(decoding: data, as: UTF8.self),
+            "text": ["format": ["type": "json_schema", "name": "check_in", "strict": true, "schema": schema]],
+        ])
+        guard let fields = try JSONSerialization.jsonObject(with: Data(OpenAI.outputText(json).utf8)) as? [String: String],
+              let title = fields["title"], let body = fields["body"], !body.isEmpty else {
+            throw OpenAIError(message: "Couldn't read the check-in the AI wrote.")
+        }
+        return (title, body)
+    }
+
     // MARK: Ask
 
     /// Answers a question about your time, looking things up in the local log with tools.

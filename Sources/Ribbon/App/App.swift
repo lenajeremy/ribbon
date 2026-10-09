@@ -23,6 +23,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var breakCoach: BreakCoach!
     private var assistant: Assistant!
     private var updater: Updater!
+    private var checkIns: CheckInCoach!
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         if let id = Bundle.main.bundleIdentifier,
@@ -62,6 +63,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         breakCoach = BreakCoach(tracker: tracker, settings: settings, isFocusing: { [weak self] in
             self?.focus.model.phase != .idle
         })
+        checkIns = CheckInCoach(store: store, reports: reports, assistant: assistant, tracker: tracker, settings: settings,
+                                isFocusing: { [weak self] in self?.focus.model.phase != .idle })
 
         tracker.onActivity = { [weak self] observation, category, app in
             self?.blocker.check(observation, category: category, app: app)
@@ -78,6 +81,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             updater.focusEnded()
         }
         focus.openDashboard = { [weak self] in self?.dashboard.show(.today) }
+        Notifier.onOpen = { [weak self] in self?.dashboard.show(.today) }
 
         NSApp.mainMenu = Self.mainMenu()
         Notifier.requestPermission()
@@ -85,6 +89,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         focus.start(task: args.firstIndex(of: "--start").flatMap { args.indices.contains($0 + 1) ? args[$0 + 1] : nil })
         tracker.start()
         breakCoach.start()
+        checkIns.start()
         scheduleReviews()
         updater.start()
         Task { await classifier.repairCustomLabels() }

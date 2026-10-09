@@ -31,7 +31,12 @@ import UserNotifications
 }
 
 enum Notifier {
+    /// What clicking one of Ribbon's notifications does.
+    @MainActor static var onOpen: () -> Void = {}
+    private static let delegate = Delegate()
+
     static func requestPermission() {
+        UNUserNotificationCenter.current().delegate = delegate
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { granted, _ in
             if !granted { logLine("Notifications not allowed") }
         }
@@ -43,5 +48,20 @@ enum Notifier {
         content.body = body
         content.sound = .default
         UNUserNotificationCenter.current().add(UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil))
+    }
+
+    static func isAllowed() async -> Bool {
+        let status = await UNUserNotificationCenter.current().notificationSettings().authorizationStatus
+        return status == .authorized || status == .provisional
+    }
+
+    private final class Delegate: NSObject, UNUserNotificationCenterDelegate {
+        /// Show banners even while Ribbon's own window is in front.
+        func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification)
+            async -> UNNotificationPresentationOptions { [.banner, .sound] }
+
+        func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse) async {
+            await MainActor.run { Notifier.onOpen() }
+        }
     }
 }

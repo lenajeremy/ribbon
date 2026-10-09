@@ -84,6 +84,15 @@ struct SettingsView: View {
                 Toggle("", isOn: $settings.showOrbWhenIdle).toggleStyle(.switch).labelsHidden()
                     .onChange(of: settings.showOrbWhenIdle) { model.focus?.updateOverlayVisibility() }
             }
+            SettingRow("Check in with me", "Ribbon looks at your day and sends a nudge when you drift, or encouragement when it's going well.") {
+                Toggle("", isOn: $settings.checkIns).toggleStyle(.switch).labelsHidden()
+            }
+            SettingRow("Check in every", "Nudges come this often. Encouragement comes at most once an hour.") {
+                Dropdown(selection: settings.checkInMinutes, options: [15, 30, 60].map { ($0, "\($0) minutes") }) {
+                    settings.checkInMinutes = $0
+                }
+                .disabled(!settings.checkIns).opacity(settings.checkIns ? 1 : 0.5)
+            }
             SettingRow("Install updates automatically", "Ribbon downloads new versions and shows you what's new. They're installed when Ribbon restarts.") {
                 Toggle("", isOn: $settings.automaticUpdates).toggleStyle(.switch).labelsHidden()
             }
@@ -142,6 +151,7 @@ struct SettingsView: View {
                           granted: CGPreflightScreenCaptureAccess(), pane: "Privacy_ScreenCapture")
             PermissionRow(title: "Accessibility", detail: "Hides apps a focus session doesn't allow. Without it, they're quit.",
                           granted: AXIsProcessTrusted(), pane: "Privacy_Accessibility")
+            NotificationsRow()
             ForEach(browsers, id: \.id) { browser in
                 let access = model.tracker.browsers.access[browser.id] ?? .unknown
                 PermissionRow(title: browser.name, detail: "Reads the address of the tab you're on, and blocks sites in sessions.",
@@ -229,6 +239,26 @@ private struct SettingRow<Control: View>: View {
             Spacer(minLength: 20)
             control
         }
+    }
+}
+
+/// Whether macOS lets Ribbon show notifications, which check-ins and break reminders need.
+private struct NotificationsRow: View {
+    @State private var allowed: Bool?
+
+    var body: some View {
+        SettingRow("Notifications", "Check-ins, break reminders and your weekly review.") {
+            if allowed == true {
+                Label("Allowed", systemImage: "checkmark").font(Typeface.caption).foregroundStyle(Theme.ink)
+            } else if allowed == false {
+                Button("Open Settings") {
+                    let id = Bundle.main.bundleIdentifier ?? ""
+                    NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.Notifications-Settings.extension?id=\(id)")!)
+                }
+                .buttonStyle(PillButtonStyle())
+            }
+        }
+        .task { allowed = await Notifier.isAllowed() }
     }
 }
 

@@ -12,6 +12,7 @@ The AI time tracker for Mac. Ribbon tracks the apps and websites you use, shows 
 - **Sorts your time into categories.** AI puts each app and website into a category (OpenAI's Decisions API). Add your own categories by describing what belongs in them.
 - **Shows your day.** A daily ribbon of your activity, focus blocks, breaks, Productivity / Focus / Break scores, and daily and weekly reviews written by AI.
 - **Blocks distractions while you focus.** Session types decide which apps and websites you can use. Anything else is hidden or quit, and blocked tabs turn into a "blocked" page. An optional orb watches your screens and nudges you out loud when you drift.
+- **Checks in on you.** Every 30 minutes, a notification nudges you back to work when you've drifted, or encourages you when it's going well.
 - **Answers questions about your time.** Ask things like "How long was I on YouTube this week?" and get answers from your own log.
 
 ## Download

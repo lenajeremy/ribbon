@@ -231,7 +231,7 @@ enum Analytics {
 
     /// A move to another app or website only counts once you've stayed there this long.
     static let minimumStay: TimeInterval = 10
-    private static let ownBundle = Bundle.main.bundleIdentifier ?? "com.jeremiahlena.focusorb"
+    static let ownBundle = Bundle.main.bundleIdentifier ?? "com.jeremiahlena.focusorb"
 
     /// Moves to a different app or website where you then stay at least `minimumStay`. Back-to-back rows in the
     /// same place are one stay (a new window title starts a new row). Ribbon's own windows aren't a place, and a
