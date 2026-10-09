@@ -41,6 +41,7 @@ private let transient = unsafeBitCast(-1, to: sqlite3_destructor_type.self)
               nudges INTEGER NOT NULL DEFAULT 0, blocks INTEGER NOT NULL DEFAULT 0)
             """,
             "CREATE TABLE IF NOT EXISTS reports (period TEXT NOT NULL, kind TEXT NOT NULL, text TEXT NOT NULL, created REAL NOT NULL, PRIMARY KEY (period, kind))",
+            "CREATE TABLE IF NOT EXISTS session_reviews (session_id INTEGER PRIMARY KEY, json TEXT NOT NULL, created REAL NOT NULL)",
         ] { run(sql) }
         // A session left "running" by a crash or quit ends where it was.
         run("UPDATE sessions SET outcome = 'interrupted', end = COALESCE(end, start) WHERE outcome = 'running'")
@@ -220,13 +221,30 @@ private let transient = unsafeBitCast(-1, to: sqlite3_destructor_type.self)
     }
 
     func sessions(from: Date, to: Date) -> [SessionRecord] {
-        rows("SELECT id, start, end, task, profile, outcome, note, nudges, blocks FROM sessions WHERE start >= ? AND start < ? ORDER BY start DESC",
-             [from, to]).map {
+        sessions(where: "s.start >= ? AND s.start < ?", [from, to])
+    }
+
+    func session(_ id: Int64) -> SessionRecord? {
+        sessions(where: "s.id = ?", [id]).first
+    }
+
+    private func sessions(where condition: String, _ args: [Any?]) -> [SessionRecord] {
+        rows("""
+            SELECT s.id, s.start, s.end, s.task, s.profile, s.outcome, s.note, s.nudges, s.blocks, r.json
+            FROM sessions s LEFT JOIN session_reviews r ON r.session_id = s.id WHERE \(condition) ORDER BY s.start DESC
+            """, args).map {
             SessionRecord(id: $0.int64(0), start: Date(timeIntervalSince1970: $0.double(1)),
                           end: $0.isNull(2) ? nil : Date(timeIntervalSince1970: $0.double(2)),
                           task: $0.text(3), profile: $0.text(4), outcome: $0.text(5), note: $0.text(6),
-                          nudges: $0.int(7), blocks: $0.int(8))
+                          nudges: $0.int(7), blocks: $0.int(8),
+                          review: $0.isNull(9) ? nil : try? JSONDecoder().decode(SessionReview.self, from: Data($0.text(9).utf8)))
         }
+    }
+
+    func saveReview(_ review: SessionReview, for sessionID: Int64) {
+        guard let data = try? JSONEncoder().encode(review) else { return }
+        run("INSERT OR REPLACE INTO session_reviews (session_id, json, created) VALUES (?,?,?)",
+            [sessionID, String(decoding: data, as: UTF8.self), Date()])
     }
 
     // MARK: AI reports
@@ -242,7 +260,7 @@ private let transient = unsafeBitCast(-1, to: sqlite3_destructor_type.self)
     }
 
     func deleteAllData() {
-        for table in ["activity", "labels", "sessions", "reports"] { run("DELETE FROM \(table)") }
+        for table in ["activity", "labels", "sessions", "session_reviews", "reports"] { run("DELETE FROM \(table)") }
         run("VACUUM")
     }
 
@@ -324,4 +342,6 @@ struct SessionRecord: Identifiable, Hashable {
     let note: String
     let nudges: Int
     let blocks: Int
+    /// How the session went, once it has ended and been reviewed.
+    var review: SessionReview?
 }

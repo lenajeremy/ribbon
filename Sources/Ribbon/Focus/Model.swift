@@ -12,6 +12,7 @@ enum Phase: Equatable {
     var profileName = ""
     /// A short message by the orb, like what was just blocked.
     var toast: String?
+    var toastSymbol = "hand.raised.fill"
     var phaseStart = Date()
     var phaseEnd = Date()
     /// Set while a focus session is paused; the clock stands still.

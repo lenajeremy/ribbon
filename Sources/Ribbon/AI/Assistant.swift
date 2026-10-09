@@ -114,6 +114,56 @@ import Foundation
         return (title, body)
     }
 
+    // MARK: Session reviews
+
+    /// For each app and website used in a focus session, whether it served the task, plus the review's words.
+    func judgeSession(_ facts: [String: Any]) async throws
+        -> (items: [String: (onTask: Bool, why: String)], summary: String, tip: String) {
+        let data = try JSONSerialization.data(withJSONObject: facts, options: [.sortedKeys])
+        let schema: [String: Any] = [
+            "type": "object", "additionalProperties": false, "required": ["items", "summary", "tip"],
+            "properties": [
+                "items": ["type": "array", "items": [
+                    "type": "object", "additionalProperties": false, "required": ["name", "on_task", "why"],
+                    "properties": ["name": ["type": "string"], "on_task": ["type": "boolean"], "why": ["type": "string"]],
+                ]],
+                "summary": ["type": "string"], "tip": ["type": "string"],
+            ],
+        ]
+        let json = try await openai.respond([
+            "model": model, "reasoning": ["effort": "low"],
+            "instructions": """
+                You review one focus session in Ribbon, a time tracker. "task" is what the person said they would work on. \
+                You get every app and website they used during the session, with minutes, some window or page titles, \
+                and what the session type's own rules say about it.
+                - For every item, decide on_task: does it plausibly serve the task? Tools, references, documentation, research \
+                  and messages about the task count. Entertainment, social media, shopping and unrelated work don't. Use the \
+                  titles: a YouTube video about system design is on task for interview prep, music videos aren't. Judge only \
+                  against the task: session_rule is context, not the answer. Something the session blocked can still be on \
+                  task (a prep site the session type forgot to allow), and something it allowed can be off task. Return every \
+                  item, with its name exactly as given.
+                - why: a few words, like "LeetCode practice" or "YouTube music videos".
+                - summary: one or two sentences, to them as "you", in plain words: how much of the session went to the task, \
+                  and what pulled them away. Mention time away from their Mac (away_minutes: lid closed, screen locked or no \
+                  activity) only if it's at least 1 minute. Use the real minutes. Don't give a score; Ribbon shows it.
+                - tip: one short, concrete thing to do differently next session.
+                """,
+            "input": String(decoding: data, as: UTF8.self),
+            "text": ["format": ["type": "json_schema", "name": "session_review", "strict": true, "schema": schema]],
+        ])
+        guard let fields = try JSONSerialization.jsonObject(with: Data(OpenAI.outputText(json).utf8)) as? [String: Any],
+              let items = fields["items"] as? [[String: Any]] else {
+            throw OpenAIError(message: "Couldn't read the session review the AI wrote.")
+        }
+        var judged: [String: (onTask: Bool, why: String)] = [:]
+        for item in items {
+            if let name = item["name"] as? String, let onTask = item["on_task"] as? Bool {
+                judged[name] = (onTask, item["why"] as? String ?? "")
+            }
+        }
+        return (judged, fields["summary"] as? String ?? "", fields["tip"] as? String ?? "")
+    }
+
     // MARK: Ask
 
     /// Answers a question about your time, looking things up in the local log with tools.
@@ -200,7 +250,8 @@ import Foundation
             result = store.sessions(from: range[0], to: Calendar.current.date(byAdding: .day, value: 1, to: range.last!)!).map {
                 ["date": Format.dayKey($0.start), "start": Format.time($0.start), "task": $0.task, "type": $0.profile,
                  "outcome": $0.outcome, "note": $0.note, "minutes": Int((($0.end ?? Date()).timeIntervalSince($0.start)) / 60),
-                 "nudges": $0.nudges, "blocked_attempts": $0.blocks]
+                 "nudges": $0.nudges, "blocked_attempts": $0.blocks,
+                 "score": $0.review?.score ?? NSNull(), "review": $0.review.map { "\($0.verdict). \($0.summary)" } ?? ""]
             }
         default:
             result = ["error": "unknown tool"]

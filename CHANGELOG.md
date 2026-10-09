@@ -2,6 +2,10 @@
 
 Ribbon shows the section for a new version when it offers you the update.
 
+## 3.6
+
+- **Session reviews.** When a focus session ends, Ribbon compares what you did with what you said you'd work on, and scores the session out of 100. Time on unrelated things, like YouTube during interview prep, and time away from your Mac come off the score. Time you paused doesn't count. The score appears next to the orb and in a notification, and the full review, with what counted, the points taken off and a tip, is under Focus sessions › Recent sessions.
+
 ## 3.5
 
 - Fixed: on days you were active until midnight, the day's ribbon showed only four hours and cut off the evening. It now runs to midnight.

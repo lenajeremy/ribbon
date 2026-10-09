@@ -12,10 +12,15 @@ import SwiftUI
     private let profiles: () -> [SessionProfile]
     private(set) var activeProfile: SessionProfile?
     private var sessionID: Int64?
+    private var sessionStart: Date?
+    /// The running session's pauses, which its review leaves out.
+    private var pauses: [DateInterval] = []
     private var toastWork: Task<Void, Never>?
     /// Focus started, paused, resumed or ended.
     var onStateChange: (() -> Void)?
     var openDashboard: (() -> Void)?
+    /// A session ended; it's handed over for its review.
+    var onSessionEnd: ((SessionReviewer.Ended) -> Void)?
 
     var isFocusing: Bool { model.phase == .focus && !model.paused }
     /// The session whose rules apply right now.
@@ -103,7 +108,9 @@ import SwiftUI
         resetDrift()
         let duration = config.focusOverride ?? TimeInterval(profile.focusMinutes * 60)
         setPhase(.focus, duration: duration)
-        sessionID = store.beginSession(task: task, profile: profile.name, at: Date())
+        sessionStart = Date()
+        pauses = []
+        sessionID = store.beginSession(task: task, profile: profile.name, at: sessionStart!)
         if profile.watchScreen { startWatching() }
         onStateChange?()
         logLine("\(profile.name) session started (\(minutes(duration))): \(task)")
@@ -133,17 +140,36 @@ import SwiftUI
 
     private func endSession(outcome: String, note: String = "") {
         guard let id = sessionID else { return }
-        store.endSession(id, outcome: outcome, note: note)
+        let end = Date()
+        store.endSession(id, outcome: outcome, note: note, at: end)
         sessionID = nil
+        if let pausedAt = model.pausedAt { pauses.append(DateInterval(start: pausedAt, end: max(pausedAt, end))) }
+        if let profile = activeProfile, let start = sessionStart {
+            onSessionEnd?(.init(id: id, task: model.task, profile: profile, outcome: outcome, start: start, end: end, pauses: pauses))
+        }
+        sessionStart = nil
+        pauses = []
     }
 
     /// Something the session's rules blocked: show it by the orb and count it.
     func blocked(_ message: String) {
         if let sessionID { store.countSession(sessionID, nudge: false) }
+        showToast(message, symbol: "hand.raised.fill", seconds: 4)
+    }
+
+    /// A session's score, by the orb, once its review is ready.
+    func showReview(_ review: SessionReview) {
+        showToast("Session score \(review.score): \(review.verdict)", symbol: "checkmark.seal.fill", seconds: 12)
+    }
+
+    private func showToast(_ message: String, symbol: String, seconds: Double) {
         toastWork?.cancel()
-        withAnimation(.spring(duration: 0.35)) { model.toast = message }
+        withAnimation(.spring(duration: 0.35)) {
+            model.toastSymbol = symbol
+            model.toast = message
+        }
         toastWork = Task { [weak self] in
-            try? await Task.sleep(for: .seconds(4))
+            try? await Task.sleep(for: .seconds(seconds))
             guard !Task.isCancelled else { return }
             withAnimation(.easeOut(duration: 0.3)) { self?.model.toast = nil }
         }
@@ -211,6 +237,7 @@ import SwiftUI
     private func resume(automatically: Bool = false) {
         guard let pausedAt = model.pausedAt else { return }
         let paused = Date().timeIntervalSince(pausedAt)
+        pauses.append(DateInterval(start: pausedAt, end: max(pausedAt, Date())))
         closePanel()
         withAnimation(.easeInOut(duration: 0.6)) {
             model.pauseBudget = max(0, model.pauseBudget - paused)

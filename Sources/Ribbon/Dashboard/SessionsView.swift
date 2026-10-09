@@ -98,30 +98,49 @@ private struct ProfileRow: View {
     }
 }
 
+/// A past session: what it was for, when, how long, how it ended, and its score. Click for the review.
 private struct SessionRow: View {
     let session: SessionRecord
     let emoji: String
+    @State private var showReview = false
 
     var body: some View {
-        TableRow(verticalPadding: 10) {
-            Text(emoji).frame(width: 24)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(session.task).font(Typeface.row).lineLimit(1)
-                Text("\(session.profile), \(session.start.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day().hour().minute()))")
-                    .font(Typeface.caption).foregroundStyle(Theme.muted)
+        Button { if session.review != nil { showReview.toggle() } } label: {
+            TableRow(verticalPadding: 10) {
+                Text(emoji).frame(width: 24)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(session.task).font(Typeface.row).lineLimit(1)
+                    Text("\(session.profile), \(session.start.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day().hour().minute()))")
+                        .font(Typeface.caption).foregroundStyle(Theme.muted)
+                }
+                Spacer()
+                if session.nudges > 0 {
+                    Label("\(session.nudges)", systemImage: "speaker.wave.2").font(Typeface.caption).foregroundStyle(Theme.muted).help("Nudges")
+                }
+                if session.blocks > 0 {
+                    Label("\(session.blocks)", systemImage: "hand.raised").font(Typeface.caption).foregroundStyle(Theme.muted).help("Blocked attempts")
+                }
+                Text(Format.duration((session.end ?? Date()).timeIntervalSince(session.start)))
+                    .font(Typeface.row).monospacedDigit().frame(width: 60, alignment: .trailing)
+                Text(outcome).font(Typeface.caption).foregroundStyle(session.outcome == "completed" ? Theme.ink : Theme.muted)
+                    .frame(width: 80, alignment: .trailing)
+                    .help(session.note)
+                if let review = session.review {
+                    HStack(spacing: 6) {
+                        Circle().fill(SessionReviewView.color(review.score)).frame(width: 7, height: 7)
+                        Text("\(review.score)").font(.system(size: 13, weight: .semibold)).monospacedDigit()
+                    }
+                    .frame(width: 48, alignment: .trailing)
+                    .help("Session score. Click for the review.")
+                } else {
+                    Color.clear.frame(width: 48, height: 1)
+                }
             }
-            Spacer()
-            if session.nudges > 0 {
-                Label("\(session.nudges)", systemImage: "speaker.wave.2").font(Typeface.caption).foregroundStyle(Theme.muted).help("Nudges")
-            }
-            if session.blocks > 0 {
-                Label("\(session.blocks)", systemImage: "hand.raised").font(Typeface.caption).foregroundStyle(Theme.muted).help("Blocked attempts")
-            }
-            Text(Format.duration((session.end ?? Date()).timeIntervalSince(session.start)))
-                .font(Typeface.row).monospacedDigit().frame(width: 60, alignment: .trailing)
-            Text(outcome).font(Typeface.caption).foregroundStyle(session.outcome == "completed" ? Theme.ink : Theme.muted)
-                .frame(width: 80, alignment: .trailing)
-                .help(session.note)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .popover(isPresented: $showReview, arrowEdge: .trailing) {
+            if let review = session.review { SessionReviewView(task: session.task, review: review) }
         }
     }
 
@@ -130,6 +149,72 @@ private struct SessionRow: View {
         case "completed": "Completed"
         case "running": "Running"
         default: "Stopped"
+        }
+    }
+}
+
+/// A session's review: the verdict and score, what happened, the points taken off, what counted, and a tip.
+struct SessionReviewView: View {
+    let task: String
+    let review: SessionReview
+
+    /// Blue from 80, amber from 50, red below: the same scale as productive to distracting.
+    static func color(_ score: Int) -> Color {
+        score >= 80 ? Theme.productive : score >= 50 ? Theme.series(4) : Theme.distracting
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack(alignment: .firstTextBaseline, spacing: 12) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(review.verdict).font(.system(size: 15, weight: .semibold))
+                    Text(task).font(Typeface.caption).foregroundStyle(Theme.muted).lineLimit(1)
+                }
+                Spacer(minLength: 12)
+                Text("\(review.score)").font(.system(size: 30, weight: .semibold)).monospacedDigit()
+                    .foregroundStyle(Self.color(review.score))
+                    + Text(" / 100").font(.system(size: 12)).foregroundStyle(Theme.muted)
+            }
+            Text(review.summary).font(.system(size: 13)).lineSpacing(2).fixedSize(horizontal: false, vertical: true)
+            if !review.deductions.isEmpty {
+                section("Points off") {
+                    ForEach(review.deductions, id: \.self) { deduction in
+                        HStack(alignment: .firstTextBaseline) {
+                            Text(deduction.reason).font(.system(size: 12.5))
+                            Spacer(minLength: 16)
+                            Text("−\(deduction.points)").font(.system(size: 12.5, weight: .medium)).monospacedDigit()
+                        }
+                    }
+                }
+            }
+            section("What you used") {
+                ForEach(review.items.filter { $0.minutes >= 1 }.prefix(8), id: \.self) { item in
+                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                        Image(systemName: item.onTask ? "checkmark" : "xmark")
+                            .font(.system(size: 9.5, weight: .bold))
+                            .foregroundStyle(item.onTask ? Theme.productive : Theme.distracting)
+                            .frame(width: 12)
+                        Text(item.name).font(.system(size: 12.5)).lineLimit(1)
+                        if !item.why.isEmpty {
+                            Text(item.why).font(.system(size: 11.5)).foregroundStyle(Theme.muted).lineLimit(1)
+                        }
+                        Spacer(minLength: 12)
+                        Text(Format.duration(TimeInterval(item.minutes * 60))).font(.system(size: 12.5)).monospacedDigit()
+                            .foregroundStyle(Theme.muted)
+                    }
+                }
+            }
+            (Text("Next time: ").fontWeight(.semibold) + Text(review.tip))
+                .font(.system(size: 12.5)).fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(18)
+        .frame(width: 400)
+    }
+
+    private func section<Content: View>(_ title: String, @ViewBuilder _ content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 7) {
+            Text(title).font(.system(size: 11.5, weight: .semibold)).foregroundStyle(Theme.muted)
+            content()
         }
     }
 }

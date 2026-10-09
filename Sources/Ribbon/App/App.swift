@@ -24,6 +24,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var assistant: Assistant!
     private var updater: Updater!
     private var checkIns: CheckInCoach!
+    private var sessionReviewer: SessionReviewer!
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         if let id = Bundle.main.bundleIdentifier,
@@ -53,6 +54,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         focus = FocusController(config: config, openai: openai, store: store, assistant: assistant, settings: settings,
                                 profiles: { model.profiles })
         dashboardModel.focus = focus
+        sessionReviewer = SessionReviewer(store: store, assistant: assistant, rules: { reports.rules })
+        focus.onSessionEnd = { [weak self] ended in
+            Task { [weak self] in
+                guard let review = await self?.sessionReviewer.finish(ended) else { return }
+                self?.focus.showReview(review)
+                self?.dashboardModel.refresh()
+            }
+        }
         dashboardModel.updater = updater
         blocker = Blocker(browsers: tracker.browsers, rules: { reports.rules })
         statusBar = StatusBar(reports: reports, tracker: tracker, focus: focus) { [weak self] section in

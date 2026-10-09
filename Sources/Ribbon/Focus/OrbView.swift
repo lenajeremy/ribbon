@@ -12,7 +12,7 @@ struct OverlayView: View {
 
             ZStack {
                 if let toast = model.toast, !model.nudging, !model.panelOpen {
-                    Toast(text: toast)
+                    Toast(text: toast, symbol: model.toastSymbol)
                         .frame(width: 340, alignment: .trailing)
                         .position(x: center.x - ringRadius - 12 - 170, y: center.y)
                         .transition(.opacity.combined(with: .offset(x: 10)))
@@ -298,10 +298,11 @@ struct HoverLabel: View {
 
 struct Toast: View {
     let text: String
+    var symbol = "hand.raised.fill"
 
     var body: some View {
         HStack(spacing: 8) {
-            Image(systemName: "hand.raised.fill").foregroundStyle(Color(hex: 0xFFB35C))
+            Image(systemName: symbol).foregroundStyle(Color(hex: 0xFFB35C))
             Text(text).lineLimit(2)
         }
         .font(.system(size: 12.5, weight: .semibold, design: .rounded))
