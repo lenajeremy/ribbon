@@ -2,6 +2,10 @@
 
 Ribbon shows the section for a new version when it offers you the update.
 
+## 3.8
+
+- Removing a session from Recent sessions is now one click: point at the session and click the ✕ that appears on the right. Removed sessions show ↩ instead, to put them back. Right-clicking still works.
+
 ## 3.7
 
 - **Clean up Recent sessions.** Right-click a session under Focus sessions › Recent sessions and choose Remove from List. It only leaves the list: its time still counts in your day, and Ask AI still knows about it. To bring one back, click "Show removed sessions" at the bottom of the list, then right-click it and choose Put Back in List.

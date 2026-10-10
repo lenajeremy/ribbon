@@ -114,6 +114,7 @@ private struct SessionRow: View {
     let emoji: String
     let setHidden: (Bool) -> Void
     @State private var showReview = false
+    @State private var hovering = false
 
     var body: some View {
         Button { if session.review != nil { showReview.toggle() } } label: {
@@ -146,11 +147,28 @@ private struct SessionRow: View {
                 } else {
                     Color.clear.frame(width: 48, height: 1)
                 }
+                Color.clear.frame(width: 22, height: 1)  // room for the button that shows on hover
             }
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .opacity(session.hidden ? 0.45 : 1)
+        .overlay(alignment: .trailing) {
+            if hovering {
+                Button { setHidden(!session.hidden) } label: {
+                    Image(systemName: session.hidden ? "arrow.uturn.backward" : "xmark")
+                        .font(.system(size: 9.5, weight: .bold))
+                        .foregroundStyle(Theme.muted)
+                        .frame(width: 22, height: 22)
+                        .background(Theme.bubble, in: Circle())
+                        .contentShape(Circle())
+                }
+                .buttonStyle(.plain)
+                .help(session.hidden ? "Put back in the list" : "Remove from the list")
+                .padding(.bottom, 1)
+            }
+        }
+        .onHover { hovering = $0 }
         .contextMenu {
             if session.hidden {
                 Button("Put Back in List") { setHidden(false) }
