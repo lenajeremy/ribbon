@@ -3,6 +3,7 @@ import SwiftUI
 /// Session types as plain rows you can start or edit, then a table of recent sessions.
 struct SessionsView: View {
     let model: DashboardModel
+    @State private var showRemoved = false
 
     var body: some View {
         Page {
@@ -23,11 +24,20 @@ struct SessionsView: View {
                 ProfileRow(profile: profile, start: { model.start(profile) }, edit: { model.editing = profile })
             }
             SectionLabel("Recent sessions")
+            let removed = model.sessions.filter(\.hidden).count
             if model.sessions.isEmpty {
                 Text("Sessions you run show up here, with how they went.").font(Typeface.body).foregroundStyle(Theme.muted)
             } else {
-                ForEach(model.sessions.prefix(25)) { session in
-                    SessionRow(session: session, emoji: model.profiles.first { $0.name == session.profile }?.emoji ?? "🎯")
+                ForEach(model.sessions.filter { !$0.hidden || showRemoved }.prefix(25)) { session in
+                    SessionRow(session: session, emoji: model.profiles.first { $0.name == session.profile }?.emoji ?? "🎯",
+                               setHidden: { model.setHidden($0, session: session) })
+                }
+                if removed > 0 {
+                    Button(showRemoved ? "Hide removed sessions" : "Show \(removed) removed session\(removed == 1 ? "" : "s")") {
+                        showRemoved.toggle()
+                    }
+                    .buttonStyle(.plain).font(Typeface.caption).foregroundStyle(Theme.muted)
+                    .padding(.top, 12)
                 }
             }
         }
@@ -102,6 +112,7 @@ private struct ProfileRow: View {
 private struct SessionRow: View {
     let session: SessionRecord
     let emoji: String
+    let setHidden: (Bool) -> Void
     @State private var showReview = false
 
     var body: some View {
@@ -139,6 +150,14 @@ private struct SessionRow: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .opacity(session.hidden ? 0.45 : 1)
+        .contextMenu {
+            if session.hidden {
+                Button("Put Back in List") { setHidden(false) }
+            } else {
+                Button("Remove from List") { setHidden(true) }
+            }
+        }
         .popover(isPresented: $showReview, arrowEdge: .trailing) {
             if let review = session.review { SessionReviewView(task: session.task, review: review) }
         }

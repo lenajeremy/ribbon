@@ -109,6 +109,12 @@ struct Chat: Identifiable, Hashable, Codable {
 
     // MARK: Loading
 
+    /// Takes a session off the Recent sessions list, or puts it back. Its time and review stay.
+    func setHidden(_ hidden: Bool, session: SessionRecord) {
+        store.setHidden(hidden, session: session.id)
+        refresh()
+    }
+
     func refresh() {
         recentDays = store.dailyTotals(days: 14)
         todayTotal = Calendar.current.isDateInToday(day) ? (report?.total ?? 0) : reports.day(Date()).total

@@ -2,6 +2,10 @@
 
 Ribbon shows the section for a new version when it offers you the update.
 
+## 3.7
+
+- **Clean up Recent sessions.** Right-click a session under Focus sessions › Recent sessions and choose Remove from List. It only leaves the list: its time still counts in your day, and Ask AI still knows about it. To bring one back, click "Show removed sessions" at the bottom of the list, then right-click it and choose Put Back in List.
+
 ## 3.6
 
 - **Session reviews.** When a focus session ends, Ribbon compares what you did with what you said you'd work on, and scores the session out of 100. Time on unrelated things, like YouTube during interview prep, and time away from your Mac come off the score. Time you paused doesn't count. The score appears next to the orb and in a notification, and the full review, with what counted, the points taken off and a tip, is under Focus sessions › Recent sessions.

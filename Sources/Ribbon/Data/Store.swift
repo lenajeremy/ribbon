@@ -42,6 +42,8 @@ private let transient = unsafeBitCast(-1, to: sqlite3_destructor_type.self)
             """,
             "CREATE TABLE IF NOT EXISTS reports (period TEXT NOT NULL, kind TEXT NOT NULL, text TEXT NOT NULL, created REAL NOT NULL, PRIMARY KEY (period, kind))",
             "CREATE TABLE IF NOT EXISTS session_reviews (session_id INTEGER PRIMARY KEY, json TEXT NOT NULL, created REAL NOT NULL)",
+            // Sessions taken off the Recent sessions list. Their records and activity stay.
+            "CREATE TABLE IF NOT EXISTS hidden_sessions (session_id INTEGER PRIMARY KEY)",
         ] { run(sql) }
         // A session left "running" by a crash or quit ends where it was.
         run("UPDATE sessions SET outcome = 'interrupted', end = COALESCE(end, start) WHERE outcome = 'running'")
@@ -230,15 +232,22 @@ private let transient = unsafeBitCast(-1, to: sqlite3_destructor_type.self)
 
     private func sessions(where condition: String, _ args: [Any?]) -> [SessionRecord] {
         rows("""
-            SELECT s.id, s.start, s.end, s.task, s.profile, s.outcome, s.note, s.nudges, s.blocks, r.json
-            FROM sessions s LEFT JOIN session_reviews r ON r.session_id = s.id WHERE \(condition) ORDER BY s.start DESC
+            SELECT s.id, s.start, s.end, s.task, s.profile, s.outcome, s.note, s.nudges, s.blocks, r.json, h.session_id
+            FROM sessions s LEFT JOIN session_reviews r ON r.session_id = s.id LEFT JOIN hidden_sessions h ON h.session_id = s.id
+            WHERE \(condition) ORDER BY s.start DESC
             """, args).map {
             SessionRecord(id: $0.int64(0), start: Date(timeIntervalSince1970: $0.double(1)),
                           end: $0.isNull(2) ? nil : Date(timeIntervalSince1970: $0.double(2)),
                           task: $0.text(3), profile: $0.text(4), outcome: $0.text(5), note: $0.text(6),
                           nudges: $0.int(7), blocks: $0.int(8),
-                          review: $0.isNull(9) ? nil : try? JSONDecoder().decode(SessionReview.self, from: Data($0.text(9).utf8)))
+                          review: $0.isNull(9) ? nil : try? JSONDecoder().decode(SessionReview.self, from: Data($0.text(9).utf8)),
+                          hidden: !$0.isNull(10))
         }
+    }
+
+    /// Takes a session off the Recent sessions list, or puts it back.
+    func setHidden(_ hidden: Bool, session id: Int64) {
+        run(hidden ? "INSERT OR IGNORE INTO hidden_sessions (session_id) VALUES (?)" : "DELETE FROM hidden_sessions WHERE session_id = ?", [id])
     }
 
     func saveReview(_ review: SessionReview, for sessionID: Int64) {
@@ -260,7 +269,7 @@ private let transient = unsafeBitCast(-1, to: sqlite3_destructor_type.self)
     }
 
     func deleteAllData() {
-        for table in ["activity", "labels", "sessions", "session_reviews", "reports"] { run("DELETE FROM \(table)") }
+        for table in ["activity", "labels", "sessions", "session_reviews", "hidden_sessions", "reports"] { run("DELETE FROM \(table)") }
         run("VACUUM")
     }
 
@@ -344,4 +353,6 @@ struct SessionRecord: Identifiable, Hashable {
     let blocks: Int
     /// How the session went, once it has ended and been reviewed.
     var review: SessionReview?
+    /// Taken off the Recent sessions list.
+    var hidden = false
 }
