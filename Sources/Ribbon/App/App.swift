@@ -17,6 +17,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var tracker: ActivityTracker!
     private var focus: FocusController!
     private var scheduler: FocusScheduler!
+    /// When macOS last announced a log out, restart or shut down.
+    private var poweringOffAt: Date?
     private var blocker: Blocker!
     private var dashboard: DashboardWindow!
     private var dashboardModel: DashboardModel!
@@ -72,7 +74,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             self?.dashboard.show(section)
         }
         statusBar.updater = updater
-        updater.isBusy = { [weak self] in self?.focus.model.phase == .focus }
+        updater.isBusy = { [weak self] in self?.focus.model.phase == .focus || self?.focus.window != nil }
+        NSWorkspace.shared.notificationCenter.addObserver(forName: NSWorkspace.willPowerOffNotification, object: nil, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated { self?.poweringOffAt = Date() }
+        }
         breakCoach = BreakCoach(tracker: tracker, settings: settings, isFocusing: { [weak self] in
             self?.focus.model.phase != .idle
         })
@@ -118,9 +123,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         return true
     }
 
+    /// A session holds off quitting (a scheduled one entirely), but never logging out, restarting or shutting down;
+    /// a scheduled session picks up again after you log back in.
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        if let poweringOffAt, Date().timeIntervalSince(poweringOffAt) < 60 { return .terminateNow }
         // focus is nil when a second copy quits right after launch.
-        (focus?.allowQuit() ?? true) ? .terminateNow : .terminateCancel
+        return (focus?.allowQuit() ?? true) ? .terminateNow : .terminateCancel
     }
 
     func applicationWillTerminate(_ notification: Notification) {

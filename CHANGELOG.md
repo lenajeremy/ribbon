@@ -2,6 +2,11 @@
 
 Ribbon shows the section for a new version when it offers you the update.
 
+## 3.12
+
+- During a focus session, Ribbon still can't be quit, but it no longer stops your Mac from logging out, restarting or shutting down. A scheduled session picks up again after you log back in.
+- An update waits until a scheduled session is over before it restarts Ribbon, breaks included.
+
 ## 3.11
 
 - **Scheduled focus sessions.** Under Focus sessions › Schedule, choose a session type, what you'll work on, the days and the times, like 9:00 to 17:00 on weekdays. The session starts by itself, and its rules stay on until the end time, breaks included. A scheduled session can't be paused or stopped.
