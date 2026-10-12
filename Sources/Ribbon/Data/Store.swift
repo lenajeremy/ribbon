@@ -44,6 +44,9 @@ private let transient = unsafeBitCast(-1, to: sqlite3_destructor_type.self)
             "CREATE TABLE IF NOT EXISTS session_reviews (session_id INTEGER PRIMARY KEY, json TEXT NOT NULL, created REAL NOT NULL)",
             // Sessions taken off the Recent sessions list. Their records and activity stay.
             "CREATE TABLE IF NOT EXISTS hidden_sessions (session_id INTEGER PRIMARY KEY)",
+            "CREATE TABLE IF NOT EXISTS schedules (id TEXT PRIMARY KEY, json TEXT NOT NULL, sort INTEGER NOT NULL)",
+            // Each use of the weekly emergency pass, and the scheduled window it ended.
+            "CREATE TABLE IF NOT EXISTS emergency_passes (used REAL NOT NULL, window TEXT NOT NULL, reason TEXT NOT NULL)",
         ] { run(sql) }
         // A session left "running" by a crash or quit ends where it was.
         run("UPDATE sessions SET outcome = 'interrupted', end = COALESCE(end, start) WHERE outcome = 'running'")
@@ -201,6 +204,37 @@ private let transient = unsafeBitCast(-1, to: sqlite3_destructor_type.self)
             guard let data = try? JSONEncoder().encode(profile) else { continue }
             run("INSERT INTO profiles (id, json, sort) VALUES (?,?,?)", [profile.id, String(decoding: data, as: UTF8.self), index])
         }
+    }
+
+    // MARK: Schedules and the emergency pass
+
+    func schedules() -> [FocusSchedule] {
+        rows("SELECT json FROM schedules ORDER BY sort").compactMap {
+            try? JSONDecoder().decode(FocusSchedule.self, from: Data($0.text(0).utf8))
+        }
+    }
+
+    func saveSchedules(_ schedules: [FocusSchedule]) {
+        run("DELETE FROM schedules")
+        for (index, schedule) in schedules.enumerated() {
+            guard let data = try? JSONEncoder().encode(schedule) else { continue }
+            run("INSERT INTO schedules (id, json, sort) VALUES (?,?,?)", [schedule.id, String(decoding: data, as: UTF8.self), index])
+        }
+    }
+
+    /// When the emergency pass was last used, if it was this week (weeks start on Monday).
+    func emergencyPassUsedThisWeek(now: Date = Date()) -> Date? {
+        rows("SELECT MAX(used) FROM emergency_passes WHERE used >= ?", [Reports.weekStart(for: now)])
+            .first.flatMap { $0.isNull(0) ? nil : Date(timeIntervalSince1970: $0.double(0)) }
+    }
+
+    func useEmergencyPass(window: String, reason: String, at date: Date = Date()) {
+        run("INSERT INTO emergency_passes (used, window, reason) VALUES (?,?,?)", [date, window, reason])
+    }
+
+    /// The emergency pass ended this scheduled window, so it doesn't start again today.
+    func windowWasEnded(_ key: String) -> Bool {
+        !rows("SELECT 1 FROM emergency_passes WHERE window = ? LIMIT 1", [key]).isEmpty
     }
 
     // MARK: Focus sessions

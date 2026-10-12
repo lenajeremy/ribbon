@@ -78,6 +78,9 @@ struct DashboardRoot: View {
         .sheet(item: $model.editingCategory) { category in
             CategoryEditor(model: model, category: category)
         }
+        .sheet(item: $model.editingSchedule) { schedule in
+            ScheduleEditor(model: model, schedule: schedule)
+        }
         .sheet(isPresented: $model.showSettings) {
             SettingsView(model: model)
         }

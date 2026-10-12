@@ -16,6 +16,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var store: Store!
     private var tracker: ActivityTracker!
     private var focus: FocusController!
+    private var scheduler: FocusScheduler!
     private var blocker: Blocker!
     private var dashboard: DashboardWindow!
     private var dashboardModel: DashboardModel!
@@ -54,6 +55,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         focus = FocusController(config: config, openai: openai, store: store, assistant: assistant, settings: settings,
                                 profiles: { model.profiles })
         dashboardModel.focus = focus
+        scheduler = FocusScheduler(store: store, focus: focus)
+        dashboardModel.scheduler = scheduler
+        focus.onWindowEnded = { [weak self] in self?.scheduler.refreshKeepOpen() }
         sessionReviewer = SessionReviewer(store: store, assistant: assistant, rules: { reports.rules })
         focus.onSessionEnd = { [weak self] ended in
             Task { [weak self] in
@@ -96,6 +100,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         Notifier.requestPermission()
         let args = CommandLine.arguments
         focus.start(task: args.firstIndex(of: "--start").flatMap { args.indices.contains($0 + 1) ? args[$0 + 1] : nil })
+        scheduler.start()
         tracker.start()
         breakCoach.start()
         checkIns.start()

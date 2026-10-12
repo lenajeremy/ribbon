@@ -290,7 +290,11 @@ struct HoverLabel: View {
         switch model.phase {
         case .idle: return "Click and tell me what you're working on"
         case .focus where model.paused: return "Paused · \(clock(model.pauseLeft(at: date))) of pause left"
+        case .focus where model.scheduledUntil != nil:
+            return "\(clock(model.timeLeft(at: date))) left · scheduled until \(Format.time(model.scheduledUntil!))"
         case .focus: return "\(clock(model.timeLeft(at: date))) left · \(model.profileName.isEmpty ? "click for controls" : model.profileName)"
+        case .rest where model.scheduledUntil != nil:
+            return "Break: \(clock(model.timeLeft(at: date))) · rules stay on until \(Format.time(model.scheduledUntil!))"
         case .rest: return "\(clock(model.timeLeft(at: date))) · click to start the next one"
         }
     }

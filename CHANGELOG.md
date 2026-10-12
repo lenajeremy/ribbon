@@ -2,6 +2,12 @@
 
 Ribbon shows the section for a new version when it offers you the update.
 
+## 3.11
+
+- **Scheduled focus sessions.** Under Focus sessions › Schedule, choose a session type, what you'll work on, the days and the times, like 9:00 to 17:00 on weekdays. The session starts by itself, and its rules stay on until the end time, breaks included. A scheduled session can't be paused or stopped.
+- **Emergency pass.** You get one a week, from Monday. It's the only way to end a scheduled session early, and it ends that day's session.
+- If Ribbon is quit during a scheduled session, it reopens within a minute and carries on. A small background helper does this; you'll see it under System Settings › General › Login Items while you have a schedule turned on.
+
 ## 3.10
 
 - Fixed: when you were signed in with ChatGPT, Ribbon's AI didn't work. Summaries, sorting, check-ins, session reviews, Ask AI and the orb's checks all failed or came back empty. They now work on your ChatGPT plan.

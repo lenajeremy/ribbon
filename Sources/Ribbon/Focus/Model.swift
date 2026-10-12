@@ -19,6 +19,8 @@ enum Phase: Equatable {
     var pausedAt: Date?
     /// Pause time left in this Pomodoro, not counting the pause in progress.
     var pauseBudget: TimeInterval = 0
+    /// The end of the scheduled window this session belongs to.
+    var scheduledUntil: Date?
     var nudging = false
     var nudgeText: String?
     var hovering = false

@@ -1,7 +1,7 @@
 # Assembles Ribbon.app around a built executable. Sourced by build.sh and scripts/release.sh.
 # Usage: make_bundle <executable> <app path> [.env file to read the API key from]
-RIBBON_VERSION="${RIBBON_VERSION:-3.10}"
-RIBBON_BUILD="${RIBBON_BUILD:-14}"
+RIBBON_VERSION="${RIBBON_VERSION:-3.11}"
+RIBBON_BUILD="${RIBBON_BUILD:-15}"
 
 make_bundle() {
     local executable="$1" app="$2" env_file="${3:-}"
@@ -13,6 +13,28 @@ make_bundle() {
     xcrun actool Resources/AppIcon.icon --compile "$app/Contents/Resources" \
         --platform macosx --minimum-deployment-target 14.0 --app-icon AppIcon \
         --output-partial-info-plist .build/icon-info.plist >/dev/null
+
+    # Reopens Ribbon within a minute if it's quit during a scheduled focus session (registered by the app while
+    # a schedule is on). It reads the windows Ribbon writes to "scheduled-windows", one "start end" pair per line.
+    mkdir -p "$app/Contents/Library/LaunchAgents"
+    cat > "$app/Contents/Library/LaunchAgents/com.jeremiahlena.focusorb.keepopen.plist" <<'AGENT'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key><string>com.jeremiahlena.focusorb.keepopen</string>
+    <key>AssociatedBundleIdentifiers</key><array><string>com.jeremiahlena.focusorb</string></array>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/sh</string>
+        <string>-c</string>
+        <string>f="$HOME/Library/Application Support/Ribbon/scheduled-windows"; [ -f "$f" ] || exit 0; now=$(date +%s); while read -r start end; do if [ "$now" -ge "$start" ] &amp;&amp; [ "$now" -lt "$end" ]; then pgrep -x Ribbon &gt;/dev/null || open -g -b com.jeremiahlena.focusorb; exit 0; fi; done &lt; "$f"</string>
+    </array>
+    <key>StartInterval</key><integer>60</integer>
+    <key>RunAtLoad</key><true/>
+</dict>
+</plist>
+AGENT
 
     local env_entry=""
     [[ -n "$env_file" ]] && env_entry="    <key>RibbonEnvFile</key><string>$env_file</string>"

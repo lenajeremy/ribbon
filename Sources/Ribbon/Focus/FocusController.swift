@@ -12,6 +12,12 @@ import SwiftUI
     private let profiles: () -> [SessionProfile]
     private(set) var activeProfile: SessionProfile?
     private var sessionID: Int64?
+    /// The scheduled window running now. Its session stays open from start to end, through its breaks.
+    private(set) var window: ScheduledWindow?
+    /// When the current scheduled break began; breaks are left out of the session's review.
+    private var restStart: Date?
+    /// The emergency pass ended a scheduled window.
+    var onWindowEnded: (() -> Void)?
     private var sessionStart: Date?
     /// The running session's pauses, which its review leaves out.
     private var pauses: [DateInterval] = []
@@ -23,8 +29,11 @@ import SwiftUI
     var onSessionEnd: ((SessionReviewer.Ended) -> Void)?
 
     var isFocusing: Bool { model.phase == .focus && !model.paused }
-    /// The session whose rules apply right now.
-    var enforcedProfile: SessionProfile? { isFocusing ? activeProfile : nil }
+    /// The session whose rules apply right now: while focusing, and through a scheduled window's breaks.
+    var enforcedProfile: SessionProfile? {
+        if window != nil && model.phase != .idle { return activeProfile }
+        return isFocusing ? activeProfile : nil
+    }
     private let speaker = Speaker()
     private var overlay: OverlayPanel!
     private var panel: InputPanel?
@@ -105,7 +114,7 @@ import SwiftUI
         model.pauseBudget = config.pauseSeconds
         spokenLines = []
         resetDrift()
-        let duration = config.focusOverride ?? TimeInterval(profile.focusMinutes * 60)
+        let duration = focusLength(profile)
         setPhase(.focus, duration: duration)
         sessionStart = Date()
         pauses = []
@@ -115,8 +124,104 @@ import SwiftUI
         logLine("\(profile.name) session started (\(minutes(duration))): \(task)")
     }
 
+    /// A focus part's length: the session type's, cut short by a scheduled window's end.
+    private func focusLength(_ profile: SessionProfile) -> TimeInterval {
+        let length = config.focusOverride ?? TimeInterval(profile.focusMinutes * 60)
+        guard let window else { return length }
+        return min(length, window.end.timeIntervalSinceNow)
+    }
+
+    // MARK: Scheduled windows
+
+    /// Starts a scheduled window's session, or carries on if it's already running. Replaces a session in progress.
+    func startScheduled(_ window: ScheduledWindow) {
+        guard self.window?.key != window.key else { return }
+        guard profiles().contains(where: { $0.id == window.schedule.profileID }) else {
+            return logLine("Scheduled session skipped: its session type was deleted")
+        }
+        closeBreak()  // A break in another window ends with that window's session.
+        self.window = window
+        model.scheduledUntil = window.end
+        startFocus(window.schedule.task, profileID: window.schedule.profileID)
+        Notifier.post(title: "Scheduled focus session started",
+                      body: "\(model.profileName): \(window.schedule.task), until \(Format.time(window.end)).")
+        logLine("Scheduled session started until \(Format.time(window.end))")
+    }
+
+    /// The next focus part of a scheduled window, after its break.
+    private func nextFocusPart() {
+        guard let profile = activeProfile, window != nil else { return goIdle(chime: true) }
+        closeBreak()
+        spokenLines = []
+        resetDrift()
+        setPhase(.focus, duration: focusLength(profile))
+        if profile.watchScreen { startWatching() }
+        onStateChange?()
+        NSSound(named: "Glass")?.play()
+        logLine("Scheduled focus part started")
+    }
+
+    /// The window's end time: its session ends as completed.
+    private func finishWindow() {
+        guard let window else { return }
+        closeBreak()
+        stopWatching()
+        endSession(outcome: "completed")
+        leaveWindow()
+        activeProfile = nil
+        setPhase(.idle, duration: 0)
+        onStateChange?()
+        NSSound(named: "Hero")?.play()
+        Notifier.post(title: "Scheduled focus session finished", body: "That's \(window.schedule.task) done for today.")
+        logLine("Scheduled session finished")
+    }
+
+    /// Ends the scheduled window for the rest of today, with this week's emergency pass.
+    private func useEmergencyPass(reason: String) {
+        guard let window, store.emergencyPassUsedThisWeek() == nil else { return }
+        store.useEmergencyPass(window: window.key, reason: reason)
+        logLine("Emergency pass used: \(reason)")
+        closeBreak()
+        endSession(outcome: "stopped", note: "Emergency pass: \(reason)")
+        leaveWindow()
+        goIdle(chime: false)
+        onWindowEnded?()
+    }
+
+    /// The emergency pass: whether it's left this week, and what to say about it.
+    var emergencyPass: (available: Bool, note: String) {
+        guard let used = store.emergencyPassUsedThisWeek() else {
+            return (true, "You have this week's emergency pass. It's the only way to end a scheduled session early.")
+        }
+        return (false, "You used this week's emergency pass on \(used.formatted(.dateTime.weekday(.wide))) at \(Format.time(used)). "
+                + "You get a new one on Monday.")
+    }
+
+    private func closeBreak() {
+        if let restStart { pauses.append(DateInterval(start: restStart, end: max(restStart, Date()))) }
+        restStart = nil
+    }
+
+    private func leaveWindow() {
+        window = nil
+        model.scheduledUntil = nil
+    }
+
     private func startBreak() {
         stopWatching()
+        if let window, let profile = activeProfile {
+            // A scheduled window keeps its session and rules through the break.
+            let left = window.end.timeIntervalSinceNow
+            guard left >= 60 else { return finishWindow() }
+            let duration = min(config.breakOverride ?? TimeInterval(profile.breakMinutes * 60), left)
+            guard duration > 0 else { return nextFocusPart() }
+            restStart = Date()
+            setPhase(.rest, duration: duration)
+            onStateChange?()
+            NSSound(named: "Glass")?.play()
+            logLine("Scheduled break for \(minutes(duration)); the rules stay on")
+            return
+        }
         endSession(outcome: "completed")
         let duration = config.breakOverride ?? TimeInterval((activeProfile?.breakMinutes ?? 5) * 60)
         guard duration > 0 else { return goIdle(chime: true) }
@@ -129,7 +234,9 @@ import SwiftUI
 
     private func goIdle(chime: Bool) {
         stopWatching()
+        closeBreak()
         endSession(outcome: "stopped")
+        leaveWindow()
         activeProfile = nil
         setPhase(.idle, duration: 0)
         onStateChange?()
@@ -181,8 +288,9 @@ import SwiftUI
     }
 
     /// Quitting mid-session is the same as stopping, so it goes through the same deliberate steps.
+    /// During a scheduled window that means the emergency pass, even on a break.
     func allowQuit() -> Bool {
-        guard model.phase == .focus else { return true }
+        guard model.phase == .focus || window != nil else { return true }
         openPanel()
         return false
     }
@@ -210,10 +318,11 @@ import SwiftUI
             if Date().timeIntervalSince(pausedAt) >= model.pauseBudget { resume(automatically: true) }
             return
         }
+        if let window, Date() >= window.end { return finishWindow() }
         guard Date() >= model.phaseEnd else { return }
         switch model.phase {
         case .focus: startBreak()
-        case .rest: goIdle(chime: true)
+        case .rest: window != nil ? nextFocusPart() : goIdle(chime: true)
         case .idle: break
         }
     }
@@ -221,7 +330,8 @@ import SwiftUI
     // MARK: Controls (deliberately effortful; see ControlPanel)
 
     private func pause() {
-        guard model.phase == .focus, !model.paused, model.pauseBudget >= 1 else { return }
+        // Scheduled sessions can't be paused; the emergency pass is the way out.
+        guard window == nil, model.phase == .focus, !model.paused, model.pauseBudget >= 1 else { return }
         watcher?.cancel()
         watcher = nil
         resetDrift()
@@ -262,6 +372,7 @@ import SwiftUI
     }
 
     private func stop(reason: String) {
+        guard window == nil else { return }  // Only the emergency pass ends a scheduled window.
         logLine("Stopped early with \(clock(model.timeLeft(at: Date()))) left. Reason: \(reason)")
         endSession(outcome: "stopped", note: reason)
         goIdle(chime: false)
@@ -476,6 +587,7 @@ import SwiftUI
             resume: { [weak self] in self?.resume() },
             changeFocus: { [weak self] in self?.changeFocus(to: $0) },
             stop: { [weak self] in self?.stop(reason: $0) },
+            useEmergencyPass: { [weak self] in self?.useEmergencyPass(reason: $0) },
             toggleMute: { [weak self] in
                 guard let self else { return }
                 model.muted.toggle()
@@ -509,6 +621,7 @@ import SwiftUI
             profiles: all,
             profileID: profileID ?? activeProfile?.id ?? all.first?.id,
             actions: panelActions,
+            emergencyPass: emergencyPass,
             suggest: { [assistant] task in await assistant.suggestProfile(for: task, from: all) }))
         host.sizingOptions = []
         window.contentView = host

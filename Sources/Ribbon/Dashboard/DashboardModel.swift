@@ -84,6 +84,11 @@ struct Chat: Identifiable, Hashable, Codable {
     @ObservationIgnored let settings: Settings
     @ObservationIgnored var focus: FocusController?
     @ObservationIgnored var updater: Updater?
+    @ObservationIgnored var scheduler: FocusScheduler? {
+        didSet { schedules = scheduler?.schedules ?? [] }
+    }
+    var schedules: [FocusSchedule] = []
+    var editingSchedule: FocusSchedule?
     @ObservationIgnored private var conversationID: String?
     @ObservationIgnored private var timer: Timer?
 
@@ -280,6 +285,21 @@ struct Chat: Identifiable, Hashable, Codable {
     func delete(_ profile: SessionProfile) {
         profiles.removeAll { $0.id == profile.id }
         store.saveProfiles(profiles)
+    }
+
+    func save(_ schedule: FocusSchedule) {
+        if let index = schedules.firstIndex(where: { $0.id == schedule.id }) { schedules[index] = schedule } else { schedules.append(schedule) }
+        scheduler?.save(schedules)
+    }
+
+    func delete(_ schedule: FocusSchedule) {
+        schedules.removeAll { $0.id == schedule.id }
+        scheduler?.save(schedules)
+    }
+
+    /// A blank schedule: weekdays, 9:00 to 17:00, with the first session type.
+    func newSchedule() -> FocusSchedule {
+        FocusSchedule(profileID: profiles.first?.id ?? "", task: "", days: FocusSchedule.weekdays, start: 9 * 60, end: 17 * 60)
     }
 
     func start(_ profile: SessionProfile) {

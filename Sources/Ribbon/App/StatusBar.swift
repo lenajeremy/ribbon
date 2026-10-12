@@ -48,7 +48,7 @@ import AppKit
         }
         menu.addItem(.separator())
         add(menu, "Open Dashboard", #selector(openToday), "d")
-        add(menu, focus.model.phase == .focus ? "Session Controls…" : "Start a Focus Session…", #selector(startSession), "f")
+        add(menu, focus.model.phase == .focus || focus.window != nil ? "Session Controls…" : "Start a Focus Session…", #selector(startSession), "f")
         add(menu, "Ask AI…", #selector(openAsk), "")
         menu.addItem(.separator())
         if tracker.isPaused {

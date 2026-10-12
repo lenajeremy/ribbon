@@ -23,6 +23,28 @@ struct SessionsView: View {
             ForEach(model.profiles) { profile in
                 ProfileRow(profile: profile, start: { model.start(profile) }, edit: { model.editing = profile })
             }
+            HStack(alignment: .firstTextBaseline) {
+                SectionLabel("Schedule")
+                Spacer()
+                Button { model.editingSchedule = model.newSchedule() } label: { Label("Add schedule", systemImage: "plus") }
+                    .buttonStyle(PillButtonStyle())
+                    .disabled(model.profiles.isEmpty)
+            }
+            if model.schedules.isEmpty {
+                Text("Schedule a focus session to start by itself, like 9:00–17:00 on weekdays. Its rules stay on until it ends.")
+                    .font(Typeface.body).foregroundStyle(Theme.muted)
+            } else {
+                ForEach(model.schedules) { schedule in
+                    ScheduleRow(schedule: schedule, profile: model.profiles.first { $0.id == schedule.profileID },
+                                toggle: { var changed = schedule; changed.enabled.toggle(); model.save(changed) },
+                                edit: { model.editingSchedule = schedule })
+                }
+                if let pass = model.focus?.emergencyPass {
+                    Label(pass.note, systemImage: pass.available ? "exclamationmark.octagon" : "clock")
+                        .font(Typeface.caption).foregroundStyle(Theme.muted)
+                        .padding(.top, 10)
+                }
+            }
             SectionLabel("Recent sessions")
             let removed = model.sessions.filter(\.hidden).count
             if model.sessions.isEmpty {
@@ -105,6 +127,133 @@ private struct ProfileRow: View {
 
     private func list(_ sites: [String]) -> String {
         sites.count <= 3 ? sites.joined(separator: ", ") : sites.prefix(3).joined(separator: ", ") + " and \(sites.count - 3) more"
+    }
+}
+
+/// A schedule: when it runs, which session type and task, and a switch to turn it off.
+private struct ScheduleRow: View {
+    let schedule: FocusSchedule
+    let profile: SessionProfile?
+    let toggle: () -> Void
+    let edit: () -> Void
+
+    var body: some View {
+        TableRow(verticalPadding: 12) {
+            Text(profile?.emoji ?? "🗓").font(.system(size: 20))
+                .frame(width: 40, height: 40)
+                .background(Theme.bubble, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+            VStack(alignment: .leading, spacing: 3) {
+                Text("\(schedule.daysText), \(schedule.timesText)").font(.system(size: 14, weight: .semibold))
+                Text("\(profile?.name ?? "Deleted session type"): \(schedule.task)")
+                    .font(Typeface.caption).foregroundStyle(Theme.muted).lineLimit(1)
+            }
+            .opacity(schedule.enabled ? 1 : 0.5)
+            Spacer()
+            Toggle("", isOn: Binding(get: { schedule.enabled }, set: { _ in toggle() }))
+                .toggleStyle(.switch).labelsHidden().controlSize(.small)
+                .help(schedule.enabled ? "On: starts by itself" : "Off")
+            Button("Edit", action: edit).buttonStyle(PillButtonStyle())
+        }
+    }
+}
+
+/// Create or edit a schedule: session type, task, days and times.
+struct ScheduleEditor: View {
+    let model: DashboardModel
+    @State var schedule: FocusSchedule
+    @Environment(\.dismiss) private var dismiss
+
+    private var isNew: Bool { !model.schedules.contains { $0.id == schedule.id } }
+    private var valid: Bool {
+        !schedule.task.trimmingCharacters(in: .whitespaces).isEmpty && !schedule.days.isEmpty && schedule.end > schedule.start
+            && model.profiles.contains { $0.id == schedule.profileID }
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Text(isNew ? "New schedule" : "Edit schedule").font(Typeface.heading)
+                Spacer()
+                Button { dismiss() } label: { Image(systemName: "xmark").font(.system(size: 12, weight: .semibold)) }
+                    .buttonStyle(.plain).foregroundStyle(Theme.muted).keyboardShortcut(.cancelAction)
+            }
+            .padding(.horizontal, 24).padding(.top, 20).padding(.bottom, 14)
+            Rectangle().fill(Theme.hairline).frame(height: 1).padding(.horizontal, 24)
+
+            VStack(alignment: .leading, spacing: 0) {
+                FormRow(label: "Session type", detail: "Its apps and websites rules, and its focus and break lengths.") {
+                    Dropdown(selection: schedule.profileID, options: model.profiles.map { ($0.id, "\($0.emoji) \($0.name)") }) {
+                        schedule.profileID = $0
+                    }
+                }
+                FormRow(label: "Working on", detail: "What the orb and the session review hold you to.") {
+                    TextField("Google interview prep", text: $schedule.task)
+                        .textFieldStyle(.plain).font(.system(size: 14))
+                        .padding(.horizontal, 10).frame(height: 30)
+                        .background(Theme.bubble, in: RoundedRectangle(cornerRadius: 8))
+                }
+                FormRow(label: "Days") {
+                    HStack(spacing: 6) {
+                        ForEach([2, 3, 4, 5, 6, 7, 1], id: \.self) { day in
+                            let on = schedule.days.contains(day)
+                            Button {
+                                if on { schedule.days.remove(day) } else { schedule.days.insert(day) }
+                            } label: {
+                                Text(Calendar.current.veryShortWeekdaySymbols[day - 1])
+                                    .font(.system(size: 12.5, weight: .semibold))
+                                    .frame(width: 30, height: 30)
+                                    .foregroundStyle(on ? Theme.page : Theme.ink)
+                                    .background(on ? Theme.ink : Theme.bubble, in: Circle())
+                                    .contentShape(Circle())
+                            }
+                            .buttonStyle(.plain)
+                            .help(Calendar.current.weekdaySymbols[day - 1])
+                        }
+                    }
+                }
+                FormRow(label: "Time", detail: schedule.end > schedule.start ? nil : "The end has to be after the start, on the same day.") {
+                    HStack(spacing: 10) {
+                        DatePicker("", selection: time(\.start), displayedComponents: .hourAndMinute).labelsHidden()
+                        Text("to").font(.system(size: 13)).foregroundStyle(Theme.muted)
+                        DatePicker("", selection: time(\.end), displayedComponents: .hourAndMinute).labelsHidden()
+                    }
+                }
+                Text("From the start time to the end, the session's rules stay on, breaks included. The only way to end it early is your emergency pass, one a week. If Ribbon is quit during a scheduled session, it reopens within a minute and carries on.")
+                    .font(Typeface.caption).foregroundStyle(Theme.muted).fixedSize(horizontal: false, vertical: true)
+                    .padding(.top, 14)
+            }
+            .padding(.horizontal, 24)
+            Spacer(minLength: 16)
+
+            HStack(spacing: 8) {
+                if !isNew {
+                    Button("Delete") { model.delete(schedule); dismiss() }.buttonStyle(PillButtonStyle(destructive: true))
+                }
+                Spacer()
+                Button("Cancel") { dismiss() }.buttonStyle(PillButtonStyle())
+                Button(isNew ? "Add schedule" : "Save") {
+                    schedule.task = schedule.task.trimmingCharacters(in: .whitespaces)
+                    model.save(schedule)
+                    dismiss()
+                }
+                .buttonStyle(PillButtonStyle(primary: true))
+                .keyboardShortcut(.defaultAction)
+                .disabled(!valid)
+            }
+            .padding(.horizontal, 24).padding(.vertical, 16)
+        }
+        .frame(width: 600, height: 470)
+        .background(Theme.page)
+    }
+
+    /// A time of day as a date for the picker, stored as minutes after midnight.
+    private func time(_ field: WritableKeyPath<FocusSchedule, Int>) -> Binding<Date> {
+        Binding(
+            get: { Calendar.current.startOfDay(for: Date()).addingTimeInterval(TimeInterval(schedule[keyPath: field] * 60)) },
+            set: { date in
+                let parts = Calendar.current.dateComponents([.hour, .minute], from: date)
+                schedule[keyPath: field] = (parts.hour ?? 0) * 60 + (parts.minute ?? 0)
+            })
     }
 }
 
