@@ -2,6 +2,10 @@
 
 Ribbon shows the section for a new version when it offers you the update.
 
+## 3.13
+
+- Restarting Ribbon to finish an update, or after saving an API key, now reopens the dashboard so you can see it's back. Before, Ribbon came back in the menu bar only, which looked like it had closed for good.
+
 ## 3.12
 
 - During a focus session, Ribbon still can't be quit, but it no longer stops your Mac from logging out, restarting or shutting down. A scheduled session picks up again after you log back in.

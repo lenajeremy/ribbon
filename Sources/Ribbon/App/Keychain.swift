@@ -27,12 +27,20 @@ enum APIKeyStore {
     }
 }
 
-/// Quits and reopens Ribbon, so settings read at launch take effect.
+/// Quits and reopens Ribbon with its dashboard showing (it otherwise opens to the menu bar only, which looks like
+/// it never came back), so an update or settings read at launch take effect. The reopen waits for this copy to
+/// exit and retries while macOS still counts it as running.
 @MainActor func relaunch() {
     let path = Bundle.main.bundlePath.replacingOccurrences(of: "'", with: "'\\''")
     let task = Process()
     task.executableURL = URL(fileURLWithPath: "/bin/sh")
-    task.arguments = ["-c", "while kill -0 \(getpid()) 2>/dev/null; do sleep 0.2; done; open '\(path)'"]
+    task.arguments = ["-c", """
+        while kill -0 \(getpid()) 2>/dev/null; do sleep 0.2; done
+        for attempt in 1 2 3 4 5 6; do
+            open '\(path)' --args --dashboard && sleep 1 && pgrep -x Ribbon >/dev/null && exit 0
+            sleep 1
+        done
+        """]
     try? task.run()
     NSApp.terminate(nil)
 }
