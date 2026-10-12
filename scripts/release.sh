@@ -46,7 +46,10 @@ codesign --force --timestamp --sign "$IDENTITY" dist/Ribbon.dmg
 
 if [[ "${SKIP_NOTARIZE:-}" != "1" ]]; then
     echo "Notarizing the disk image…"
-    notarize dist/Ribbon.dmg
+    # Sent inside a zip: notarytool's checks on a bare disk image open it, and hang when the disk image service is busy.
+    ditto -c -k dist/Ribbon.dmg dist/Ribbon-dmg.zip
+    notarize dist/Ribbon-dmg.zip
+    rm dist/Ribbon-dmg.zip
     xcrun stapler staple dist/Ribbon.dmg
     spctl --assess --type open --context context:primary-signature --verbose=1 dist/Ribbon.dmg
 fi
