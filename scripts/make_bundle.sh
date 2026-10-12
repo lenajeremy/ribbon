@@ -1,7 +1,7 @@
 # Assembles Ribbon.app around a built executable. Sourced by build.sh and scripts/release.sh.
 # Usage: make_bundle <executable> <app path> [.env file to read the API key from]
-RIBBON_VERSION="${RIBBON_VERSION:-3.9}"
-RIBBON_BUILD="${RIBBON_BUILD:-13}"
+RIBBON_VERSION="${RIBBON_VERSION:-3.10}"
+RIBBON_BUILD="${RIBBON_BUILD:-14}"
 
 make_bundle() {
     local executable="$1" app="$2" env_file="${3:-}"

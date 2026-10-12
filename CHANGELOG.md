@@ -2,6 +2,10 @@
 
 Ribbon shows the section for a new version when it offers you the update.
 
+## 3.10
+
+- Fixed: when you were signed in with ChatGPT, Ribbon's AI didn't work. Summaries, sorting, check-ins, session reviews, Ask AI and the orb's checks all failed or came back empty. They now work on your ChatGPT plan.
+
 ## 3.9
 
 - **Use your ChatGPT plan.** In Settings › AI, choose Continue with ChatGPT to sign in. Ribbon's AI then uses your ChatGPT Plus or Pro plan instead of an API key, sharing its allowance with ChatGPT and Codex. You can see usage and set a weekly limit for Ribbon in ChatGPT settings, and pick which of your plan's models Ribbon uses.

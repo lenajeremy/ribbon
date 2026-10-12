@@ -192,6 +192,8 @@ final class OpenAI: @unchecked Sendable {
         if limitReached { throw Self.planError(code: "subscription_sharing_usage_limit_exceeded", param: nil, message: "", status: 429) }
         var body = original
         for key in Self.unsupportedOnPlan { body.removeValue(forKey: key) }
+        // The plan route takes input only as a list of items, not as plain text.
+        if let text = body["input"] as? String { body["input"] = [["role": "user", "content": text]] }
         body["store"] = false
         body["stream"] = true
         body["model"] = await planModel()
@@ -227,13 +229,21 @@ final class OpenAI: @unchecked Sendable {
             throw note(Self.planError(code: code, param: param, message: message, status: status))
         }
 
+        // The plan route's final event can arrive without the output, which streams item by item before it.
+        var items: [(index: Int, item: [String: Any])] = []
         for try await line in bytes.lines {
             guard line.hasPrefix("data:") else { continue }
             let payload = line.dropFirst(5).trimmingCharacters(in: .whitespaces)
             guard let event = try? JSONSerialization.jsonObject(with: Data(payload.utf8)) as? [String: Any] else { continue }
             switch event["type"] as? String {
+            case "response.output_item.done":
+                if let item = event["item"] as? [String: Any] { items.append(((event["output_index"] as? Int) ?? items.count, item)) }
             case "response.completed":
-                return event["response"] as? [String: Any] ?? [:]
+                var finished = event["response"] as? [String: Any] ?? [:]
+                if (finished["output"] as? [Any])?.isEmpty ?? true {
+                    finished["output"] = items.sorted { $0.index < $1.index }.map(\.item)
+                }
+                return finished
             case "response.failed":
                 let error = (event["response"] as? [String: Any])?["error"] as? [String: Any]
                 throw note(Self.planError(code: error?["code"] as? String, param: error?["param"] as? String,
