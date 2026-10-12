@@ -213,14 +213,14 @@ struct Chat: Identifiable, Hashable, Codable {
         messages = chat.messages
         persist(chat)
         guard assistant.enabled else {
-            chat.messages.append(ChatMessage(role: .error, text: "Add OPENAI_API_KEY to the .env file to ask questions."))
+            chat.messages.append(ChatMessage(role: .error, text: "Turn on AI in Settings › AI to ask questions: continue with ChatGPT or add an OpenAI API key."))
             messages = chat.messages
             return persist(chat)
         }
         asking = true
         defer { asking = false }
         do {
-            let reply = try await assistant.ask(question, previousID: chat.responseID)
+            let reply = try await assistant.ask(question, history: Array(chat.messages.dropLast()), previousID: chat.responseID)
             chat.responseID = reply.responseID
             chat.messages.append(ChatMessage(role: .assistant, text: reply.answer))
         } catch {

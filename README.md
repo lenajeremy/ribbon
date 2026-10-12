@@ -17,7 +17,7 @@ The AI time tracker for Mac. Ribbon tracks the apps and websites you use, shows 
 
 ## Download
 
-Get the latest notarized build: **[Ribbon.dmg](https://github.com/lenajeremy/ribbon/releases/latest/download/Ribbon.dmg)**. Open it, drag Ribbon to Applications, and add your OpenAI API key in Settings › AI.
+Get the latest notarized build: **[Ribbon.dmg](https://github.com/lenajeremy/ribbon/releases/latest/download/Ribbon.dmg)**. Open it, drag Ribbon to Applications, and turn on the AI in Settings › AI: sign in with your ChatGPT Plus or Pro plan, or add an OpenAI API key.
 
 Or install it with [Homebrew](https://brew.sh):
 
@@ -33,14 +33,14 @@ Ribbon keeps itself up to date. It checks this repository's releases every few h
 
 - macOS 14 or later, Apple silicon or Intel
 - Xcode with Swift 6 (command line tools are enough to build)
-- An OpenAI API key (models: `gpt-6-luna` for sorting, reviews and answers; `gpt-4o-mini-tts` for the orb's voice)
+- A ChatGPT Plus or Pro plan to sign in with, or an OpenAI API key (models: `gpt-6-luna` for sorting, reviews and answers; `gpt-4o-mini-tts` for the orb's voice, which only works with a key)
 
 ### Build and run
 
 ```sh
 git clone https://github.com/lenajeremy/ribbon.git
 cd ribbon
-cp .env.example .env      # then put your OpenAI API key in .env
+cp .env.example .env      # then put your OpenAI API key in .env, or skip this and sign in with ChatGPT in Settings › AI
 ./build.sh                # builds, installs to /Applications/Ribbon.app and launches it
 ```
 

@@ -2,6 +2,13 @@
 
 Ribbon shows the section for a new version when it offers you the update.
 
+## 3.9
+
+- **Use your ChatGPT plan.** In Settings › AI, choose Continue with ChatGPT to sign in. Ribbon's AI then uses your ChatGPT Plus or Pro plan instead of an API key, sharing its allowance with ChatGPT and Codex. You can see usage and set a weekly limit for Ribbon in ChatGPT settings, and pick which of your plan's models Ribbon uses.
+- On your ChatGPT plan, the orb speaks with a macOS voice and checks your screen every 30 seconds to spare your allowance. If the plan's limit is reached, Ribbon pauses its AI and tells you.
+- An API key still works as before.
+- Fixed: the API key's Save button could be squeezed into a blank circle.
+
 ## 3.8
 
 - Removing a session from Recent sessions is now one click: point at the session and click the ✕ that appears on the right. Removed sessions show ↩ instead, to put them back. Right-clicking still works.

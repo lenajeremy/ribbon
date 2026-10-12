@@ -42,10 +42,20 @@ struct TodayView: View {
         VStack(alignment: .leading, spacing: 10) {
             if !model.assistant.enabled {
                 HStack(spacing: 10) {
-                    Image(systemName: "key")
-                    Text("Add your OpenAI API key to turn on AI sorting, summaries and answers.").font(Typeface.row)
+                    Image(systemName: "sparkles")
+                    Text("Turn on AI sorting, summaries and answers with your ChatGPT plan or an OpenAI API key.").font(Typeface.row)
                     Spacer()
-                    Button("Add key") { model.settingsPane = "AI"; model.showSettings = true }.buttonStyle(PillButtonStyle(primary: true))
+                    Button("Set up") { model.settingsPane = "AI"; model.showSettings = true }.buttonStyle(PillButtonStyle(primary: true))
+                }
+                .padding(12)
+                .background(Theme.bubble, in: RoundedRectangle(cornerRadius: 12))
+                .padding(.bottom, 18)
+            } else if model.assistant.openai.limitReached {
+                HStack(spacing: 10) {
+                    Image(systemName: "pause.circle")
+                    Text("Usage limit reached. Ribbon's AI is paused until your ChatGPT plan has room again.").font(Typeface.row)
+                    Spacer()
+                    Button("Manage usage") { NSWorkspace.shared.open(ChatGPTAuth.usageSettings) }.buttonStyle(PillButtonStyle(primary: true))
                 }
                 .padding(12)
                 .background(Theme.bubble, in: RoundedRectangle(cornerRadius: 12))
@@ -89,7 +99,7 @@ struct TodayView: View {
                 MarkdownBlocks(text: brief.text.split(separator: "\n").dropFirst().joined(separator: "\n"))
             } else {
                 Text(model.assistant.enabled ? "A summary appears once there's half an hour of your day to talk about."
-                                             : "Add OPENAI_API_KEY to the .env file for AI summaries.")
+                                             : "Turn on AI in Settings › AI for summaries.")
                     .font(Typeface.body).foregroundStyle(Theme.muted)
             }
         }

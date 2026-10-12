@@ -34,19 +34,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
         let config = Config.load()
-        let aiEnabled = !config.apiKey.isEmpty
         // A key from .env (builds from source) is kept in the keychain too, so it survives updating to a downloaded build.
-        if aiEnabled && APIKeyStore.read() == nil { APIKeyStore.save(config.apiKey) }
+        if !config.apiKey.isEmpty && APIKeyStore.read() == nil { APIKeyStore.save(config.apiKey) }
         let settings = Settings()
         updater = Updater(settings: settings)
-        let openai = OpenAI(key: config.apiKey)
+        let chatgpt = ChatGPTAuth()
+        let openai = OpenAI(key: config.apiKey, chatgpt: chatgpt)
         store = Store()
         Categories.custom = store.customCategories()
-        let classifier = Classifier(store: store, openai: openai, aiEnabled: aiEnabled)
+        let classifier = Classifier(store: store, openai: openai)
         tracker = ActivityTracker(store: store, classifier: classifier)
         tracker.idleThreshold = TimeInterval(settings.idleMinutes * 60)
         let reports = Reports(store: store, settings: settings)
-        assistant = Assistant(openai: openai, reports: reports, enabled: aiEnabled)
+        assistant = Assistant(openai: openai, reports: reports)
         dashboardModel = DashboardModel(store: store, reports: reports, assistant: assistant, classifier: classifier,
                                         tracker: tracker, settings: settings)
         dashboard = DashboardWindow(model: dashboardModel)
@@ -103,7 +103,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         updater.start()
         Task { await classifier.repairCustomLabels() }
         if args.contains("--dashboard") { dashboard.show(.today) }
-        logLine("Ribbon ready. Tracking \(tracker.isPaused ? "paused" : "on"); AI \(aiEnabled ? "on" : "off")")
+        logLine("Ribbon ready. Tracking \(tracker.isPaused ? "paused" : "on"); AI "
+                + (openai.usesPlan ? "on (ChatGPT plan)" : openai.isAvailable ? "on (API key)" : "off"))
     }
 
     /// Opening the app again (from Finder or Spotlight) opens the dashboard.
@@ -127,10 +128,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     /// Yesterday's review and last week's review get written in the background, so they're waiting for you.
     private func scheduleReviews() {
-        guard assistant.enabled else { return }
         let check = { [weak self] in
             guard let self else { return }
             Task { @MainActor in
+                guard self.assistant.enabled else { return }
                 let yesterday = Calendar.current.date(byAdding: .day, value: -1, to: Date())!
                 if self.assistant.cachedBrief(for: yesterday) == nil,
                    self.dashboardModel.reports.day(yesterday).total >= 30 * 60 {

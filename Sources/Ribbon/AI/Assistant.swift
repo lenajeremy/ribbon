@@ -3,15 +3,16 @@ import Foundation
 /// Everything the AI writes or answers: daily and weekly reviews, questions about your time,
 /// session types from a description, and which session type fits a task.
 @MainActor final class Assistant {
-    private let openai: OpenAI
+    let openai: OpenAI
     private let reports: Reports
-    let enabled: Bool
 
-    init(openai: OpenAI, reports: Reports, enabled: Bool) {
+    init(openai: OpenAI, reports: Reports) {
         self.openai = openai
         self.reports = reports
-        self.enabled = enabled
     }
+
+    /// An API key, or a ChatGPT sign-in that may use the plan. Signing in turns AI on straight away.
+    var enabled: Bool { openai.isAvailable }
 
     private var store: Store { reports.store }
     private var model: String { "gpt-6-luna" }
@@ -166,9 +167,10 @@ import Foundation
 
     // MARK: Ask
 
-    /// Answers a question about your time, looking things up in the local log with tools.
-    /// Pass the previous response's id to keep the conversation going.
-    func ask(_ question: String, previousID: String?) async throws -> (answer: String, responseID: String) {
+    /// Answers a question about your time, looking things up in the local log with tools. To keep the conversation
+    /// going, an API key uses the previous response's id; the ChatGPT plan doesn't store responses, so the earlier
+    /// messages are sent again instead.
+    func ask(_ question: String, history: [ChatMessage], previousID: String?) async throws -> (answer: String, responseID: String) {
         let now = Date()
         let instructions = """
             You are the AI inside Ribbon, a private time tracker on the user's Mac. Answer questions about how they spend \
@@ -182,6 +184,27 @@ import Foundation
             "model": model, "reasoning": ["effort": "low"], "instructions": instructions, "tools": Self.tools,
             "input": [["role": "user", "content": question]],
         ]
+        if openai.usesPlan {
+            var input: [[String: Any]] = history.compactMap { message in
+                switch message.role {
+                case .user: ["role": "user", "content": message.text]
+                case .assistant: ["role": "assistant", "content": message.text]
+                default: nil
+                }
+            }
+            input.append(["role": "user", "content": question])
+            for _ in 0..<6 {
+                body["input"] = input
+                let json = try await openai.respond(body)
+                let calls = OpenAI.functionCalls(json)
+                if calls.isEmpty { return (OpenAI.outputText(json), "") }
+                for call in calls {
+                    input.append(["type": "function_call", "call_id": call.callID, "name": call.name, "arguments": call.arguments])
+                    input.append(["type": "function_call_output", "call_id": call.callID, "output": runTool(call.name, call.arguments)])
+                }
+            }
+            throw OpenAIError(message: "The assistant kept looking things up without answering.")
+        }
         if let previousID { body["previous_response_id"] = previousID }
         for _ in 0..<6 {
             let json = try await openai.respond(body)

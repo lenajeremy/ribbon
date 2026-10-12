@@ -11,6 +11,8 @@ struct SettingsView: View {
     @State private var keySaved = false
     @State private var confirmDelete = false
     @State private var refresh = 0
+    /// Bumped when the ChatGPT sign-in changes, so the rows that depend on it update (without resetting the sign-in row).
+    @State private var planChanges = 0
     @Environment(\.dismiss) private var dismiss
 
     enum Pane: String, CaseIterable, Identifiable {
@@ -158,9 +160,15 @@ struct SettingsView: View {
                               granted: access == .granted, denied: access == .denied, pane: "Privacy_Automation")
             }
         case .ai:
+            let openai = model.assistant.openai
+            let _ = planChanges
+            ChatGPTPlanRow(openai: openai) { planChanges += 1 }
+            if openai.usesPlan { PlanModelRow(openai: openai) }
             SettingRow("OpenAI API key", keySaved ? "Saved to your keychain. Relaunch Ribbon to start using it."
-                       : model.assistant.enabled ? "Connected. Paste a different key to replace it."
-                       : "Turns on sorting, summaries, answers and the orb. Get a key at platform.openai.com.") {
+                       : openai.usesPlan ? (openai.hasAPIKey ? "Not used while Ribbon uses your ChatGPT plan. It's used again if you sign out."
+                                                             : "Not needed while Ribbon uses your ChatGPT plan.")
+                       : openai.hasAPIKey ? "Connected. Paste a different key to replace it."
+                       : "Or use a key from platform.openai.com. It turns on sorting, summaries, answers and the orb.") {
                 if keySaved {
                     Button("Relaunch") { relaunch() }.buttonStyle(PillButtonStyle(primary: true))
                 } else {
@@ -171,11 +179,14 @@ struct SettingsView: View {
                             .background(Theme.bubble, in: RoundedRectangle(cornerRadius: 8))
                         Button("Save") { keySaved = APIKeyStore.save(newKey); newKey = "" }
                             .buttonStyle(PillButtonStyle(primary: true))
+                            .fixedSize()
                             .disabled(newKey.trimmingCharacters(in: .whitespaces).isEmpty)
                     }
                 }
             }
-            SettingRow("Models", "Sorting apps and sites and picking session types use the Decisions API; summaries and answers use the Responses API (gpt-6-luna).") {
+            SettingRow("Models", openai.usesPlan
+                       ? "Your plan's model does everything, including the yes-or-no questions an API key sends to the Decisions API. The orb speaks with a macOS voice and checks your screen every 30 seconds."
+                       : "Sorting apps and sites and picking session types use the Decisions API; summaries and answers use the Responses API (gpt-6-luna).") {
                 EmptyView()
             }
             SettingRow("What the AI sees", "App names, website names, page titles and totals. Screenshots only during focus sessions that watch your screen, and they're never saved.") {
@@ -259,6 +270,113 @@ private struct NotificationsRow: View {
             }
         }
         .task { allowed = await Notifier.isAllowed() }
+    }
+}
+
+/// Use your ChatGPT plan: sign in with ChatGPT so Ribbon's AI is paid by the plan instead of an API key.
+private struct ChatGPTPlanRow: View {
+    let openai: OpenAI
+    let changed: () -> Void
+    @State private var signingIn = false
+    @State private var error: String?
+    @State private var note: String?
+    @State private var showWelcome = false
+
+    var body: some View {
+        let account = openai.chatgpt?.account
+        SettingRow("Use your ChatGPT plan", detail(account)) {
+            HStack(spacing: 8) {
+                if signingIn {
+                    ProgressView().controlSize(.small)
+                    Button("Cancel") { openai.chatgpt?.cancelSignIn() }.buttonStyle(PillButtonStyle())
+                } else if let account, account.canUsePlan {
+                    Button("Manage usage") { NSWorkspace.shared.open(ChatGPTAuth.usageSettings) }.buttonStyle(PillButtonStyle())
+                    Button("Sign Out") { Task { await signOut() } }.buttonStyle(PillButtonStyle())
+                } else {
+                    if account != nil {
+                        Button("Sign Out") { Task { await signOut() } }.buttonStyle(PillButtonStyle())
+                    }
+                    Button("Continue with ChatGPT") { Task { await signIn() } }.buttonStyle(PillButtonStyle(primary: true))
+                }
+            }
+        }
+        .alert("You're using your ChatGPT plan", isPresented: $showWelcome) {
+            Button("Got it") {}
+            Button("Manage usage") { NSWorkspace.shared.open(ChatGPTAuth.usageSettings) }
+        } message: {
+            Text("Ribbon's AI now uses your ChatGPT plan, the same allowance as ChatGPT and Codex. You can see your usage and set a limit for Ribbon in ChatGPT settings.")
+        }
+    }
+
+    private func detail(_ account: ChatGPTAccount?) -> String {
+        if signingIn { return "Finish signing in in your browser." }
+        if let error { return error }
+        guard let account else {
+            return note ?? "Ribbon's AI can use your ChatGPT Plus or Pro plan instead of an API key. You can set a weekly limit for Ribbon in ChatGPT."
+        }
+        if !account.canUsePlan {
+            return "Signed in as \(account.email), but Ribbon isn't allowed to use your plan. Continue with ChatGPT again and allow it, or use an API key."
+        }
+        if openai.limitReached {
+            return "Signed in as \(account.email). Usage limit reached: Ribbon's AI is paused until your plan has room again."
+        }
+        return "Signed in as \(account.email). Using ChatGPT plan: your plan pays for Ribbon's AI."
+    }
+
+    @MainActor private func signIn() async {
+        guard let auth = openai.chatgpt else { return }
+        error = nil
+        note = nil
+        signingIn = true
+        defer {
+            signingIn = false
+            changed()
+        }
+        do {
+            let account = try await auth.signIn()
+            NSApp.activate()
+            if account.canUsePlan && !UserDefaults.standard.bool(forKey: "chatgptWelcomeShown") {
+                UserDefaults.standard.set(true, forKey: "chatgptWelcomeShown")
+                showWelcome = true
+            }
+        } catch ChatGPTAuthError.cancelled {
+        } catch {
+            self.error = error.localizedDescription
+        }
+    }
+
+    @MainActor private func signOut() async {
+        guard let auth = openai.chatgpt else { return }
+        let revoked = await auth.signOut()
+        note = revoked ? nil : "Signed out on this Mac. Ribbon couldn't reach OpenAI to disconnect, so remove Ribbon in ChatGPT settings to finish."
+        changed()
+    }
+}
+
+/// Which of the plan's models Ribbon uses.
+private struct PlanModelRow: View {
+    let openai: OpenAI
+    @State private var models: [String]?
+    @State private var selected = ""
+
+    var body: some View {
+        SettingRow("Model", "The model from your ChatGPT plan that Ribbon uses.") {
+            if let models, !models.isEmpty {
+                Dropdown(selection: selected, options: models.map { ($0, $0) }) {
+                    selected = $0
+                    UserDefaults.standard.set($0, forKey: "chatgptModel")
+                }
+            } else if models != nil {
+                Text("Couldn't load your plan's models").font(Typeface.caption).foregroundStyle(Theme.muted)
+            } else {
+                ProgressView().controlSize(.small)
+            }
+        }
+        .task {
+            let list = await openai.planModels()
+            selected = await openai.planModel()
+            models = list
+        }
     }
 }
 

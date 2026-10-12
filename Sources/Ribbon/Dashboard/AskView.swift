@@ -17,7 +17,10 @@ struct AskView: View {
                 Spacer()
                 Text("What do you want to know about your time?")
                     .font(Typeface.greeting).foregroundStyle(Theme.ink).multilineTextAlignment(.center)
-                Composer(placeholder: "Ask anything", text: $model.draft, busy: model.asking) { send() }
+                VStack(spacing: 8) {
+                    Composer(placeholder: "Ask anything", text: $model.draft, busy: model.asking) { send() }
+                    PlanNote(openai: model.assistant.openai)
+                }
                 FlowLayout(spacing: 8) {
                     ForEach(suggestions, id: \.1) { symbol, text in
                         Chip(text: text, symbol: symbol) { Task { await model.ask(text) } }
@@ -59,8 +62,11 @@ struct AskView: View {
                         }
                     }
                 }
-                Composer(placeholder: "Ask a follow-up", text: $model.draft, busy: model.asking) { send() }
-                    .modifier(ComposerDock())
+                VStack(spacing: 6) {
+                    Composer(placeholder: "Ask a follow-up", text: $model.draft, busy: model.asking) { send() }
+                    PlanNote(openai: model.assistant.openai)
+                }
+                .modifier(ComposerDock())
             }
             .background(Theme.page)
         }
@@ -103,6 +109,23 @@ private struct MessageView: View {
         case .error:
             Label(message.text, systemImage: "exclamationmark.triangle")
                 .font(Typeface.body).foregroundStyle(Theme.muted)
+        }
+    }
+}
+
+/// "Using ChatGPT plan · Manage usage" under the message box, when the plan pays for answers.
+private struct PlanNote: View {
+    let openai: OpenAI
+
+    var body: some View {
+        if openai.usesPlan {
+            HStack(spacing: 6) {
+                Text("Using ChatGPT plan")
+                Text("·")
+                Button("Manage usage") { NSWorkspace.shared.open(ChatGPTAuth.usageSettings) }
+                    .buttonStyle(.plain).underline()
+            }
+            .font(Typeface.caption).foregroundStyle(Theme.muted)
         }
     }
 }

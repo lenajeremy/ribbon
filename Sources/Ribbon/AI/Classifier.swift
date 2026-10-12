@@ -10,7 +10,8 @@ import Foundation
 
     private let store: Store
     private let openai: OpenAI
-    private let aiEnabled: Bool
+    /// An API key or a ChatGPT sign-in; checked on every use, so signing in starts sorting straight away.
+    private var aiEnabled: Bool { openai.isAvailable }
     private(set) var labels: [String: Label] = [:]
     private var pending: Set<String> = []
     private var queue: [(key: String, description: String)] = []
@@ -18,10 +19,9 @@ import Foundation
     /// A key was categorized (by the AI or by you).
     var onLabel: ((String, String) -> Void)?
 
-    init(store: Store, openai: OpenAI, aiEnabled: Bool) {
+    init(store: Store, openai: OpenAI) {
         self.store = store
         self.openai = openai
-        self.aiEnabled = aiEnabled
         for (key, value) in store.labels() { labels[key] = Label(category: value.category, source: value.source) }
     }
 

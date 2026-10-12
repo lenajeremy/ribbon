@@ -88,7 +88,6 @@ import SwiftUI
             ScreenCapture.requestPermission()
             model.status = "Allow Ribbon under Privacy & Security › Screen Recording, then relaunch it"
         }
-        if config.apiKey.isEmpty { model.status = "Add OPENAI_API_KEY to the .env file, then relaunch" }
         updateOverlayVisibility()
         if let task { startFocus(task, profileID: nil) }
     }
@@ -276,10 +275,15 @@ import SwiftUI
             while !Task.isCancelled {
                 let started = Date()
                 await self?.check()
-                guard let interval = self?.config.checkSeconds else { return }
+                guard let interval = self?.checkInterval else { return }
                 try? await Task.sleep(for: .seconds(max(0.5, interval - Date().timeIntervalSince(started))))
             }
         }
+    }
+
+    /// How often the orb looks at your screen. On the ChatGPT plan, every 30 seconds at most, to spare its allowance.
+    private var checkInterval: TimeInterval {
+        openai.usesPlan ? max(30, config.checkSeconds) : config.checkSeconds
     }
 
     private func stopWatching() {
@@ -291,7 +295,11 @@ import SwiftUI
     }
 
     private func check() async {
-        guard model.phase == .focus, !screenLocked, !screensAsleep, !config.apiKey.isEmpty else { return }
+        guard model.phase == .focus, !screenLocked, !screensAsleep else { return }
+        guard openai.isAvailable else {
+            model.status = "Turn on AI in Settings › AI to have the orb watch: continue with ChatGPT or add an OpenAI API key"
+            return
+        }
         guard ScreenCapture.hasPermission else {
             model.status = "Allow Ribbon under Privacy & Security › Screen Recording, then relaunch it"
             return
@@ -367,7 +375,8 @@ import SwiftUI
                 logLine("Couldn't write a line: \(error.localizedDescription)")
                 text = "Hey, that doesn't look like \(task). Back to it?"
             }
-            if muted || Task.isCancelled { return Line(text: text, audio: nil) }
+            // Without an OpenAI voice (on the ChatGPT plan), the macOS voice reads it.
+            if muted || Task.isCancelled || !openai.canSpeak { return Line(text: text, audio: nil) }
             do {
                 return Line(text: text, audio: try await openai.speech(text, voice: voice))
             } catch {
