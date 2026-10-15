@@ -10,6 +10,9 @@ struct TodayView: View {
         ZStack(alignment: .bottom) {
             Page {
                 header
+                if model.isToday, let focus = model.focus, focus.model.phase != .idle {
+                    SessionCard(focus: focus).padding(.top, 24)
+                }
                 if let report = model.report, report.total > 0 {
                     VStack(alignment: .leading, spacing: 12) {
                         DayRibbon(report: report, showNow: model.isToday)

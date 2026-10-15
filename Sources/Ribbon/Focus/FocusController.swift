@@ -177,7 +177,7 @@ import SwiftUI
     }
 
     /// Ends the scheduled window for the rest of today, with this week's emergency pass.
-    private func useEmergencyPass(reason: String) {
+    func useEmergencyPass(reason: String) {
         guard let window, store.emergencyPassUsedThisWeek() == nil else { return }
         store.useEmergencyPass(window: window.key, reason: reason)
         logLine("Emergency pass used: \(reason)")
@@ -329,7 +329,19 @@ import SwiftUI
 
     // MARK: Controls (deliberately effortful; see ControlPanel)
 
-    private func pause() {
+    /// A manual session that's focusing, with pause time left. Scheduled sessions can't be paused.
+    var canPause: Bool {
+        window == nil && model.phase == .focus && !model.paused && model.pauseLeft(at: Date()) >= 1
+    }
+
+    /// Ends a manual session's break now; scheduled breaks run their course.
+    func endBreak() {
+        guard window == nil, model.phase == .rest else { return }
+        logLine("Break ended early")
+        goIdle(chime: false)
+    }
+
+    func pause() {
         // Scheduled sessions can't be paused; the emergency pass is the way out.
         guard window == nil, model.phase == .focus, !model.paused, model.pauseBudget >= 1 else { return }
         watcher?.cancel()
@@ -343,7 +355,7 @@ import SwiftUI
         logLine("Paused (up to \(clock(model.pauseBudget)))")
     }
 
-    private func resume(automatically: Bool = false) {
+    func resume(automatically: Bool = false) {
         guard let pausedAt = model.pausedAt else { return }
         let paused = Date().timeIntervalSince(pausedAt)
         pauses.append(DateInterval(start: pausedAt, end: max(pausedAt, Date())))
@@ -371,7 +383,7 @@ import SwiftUI
         closePanel()
     }
 
-    private func stop(reason: String) {
+    func stop(reason: String) {
         guard window == nil else { return }  // Only the emergency pass ends a scheduled window.
         logLine("Stopped early with \(clock(model.timeLeft(at: Date()))) left. Reason: \(reason)")
         endSession(outcome: "stopped", note: reason)

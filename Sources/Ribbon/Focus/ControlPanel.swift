@@ -336,6 +336,8 @@ struct HoldButton: View {
     let seconds: Double
     let tint: Color
     var enabled = true
+    /// The unfilled part: faint white on the orb's dark panel; a light gray in the dashboard.
+    var track: Color = .white.opacity(0.09)
     let action: () -> Void
     @State private var progress: CGFloat = 0
     @State private var holding = false
@@ -349,7 +351,7 @@ struct HoldButton: View {
             .background {
                 GeometryReader { geo in
                     ZStack(alignment: .leading) {
-                        Capsule().fill(.white.opacity(0.09))
+                        Capsule().fill(track)
                         Capsule().fill(tint.opacity(0.85)).frame(width: geo.size.width * progress)
                     }
                 }

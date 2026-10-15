@@ -2,6 +2,11 @@
 
 Ribbon shows the section for a new version when it offers you the update.
 
+## 3.14
+
+- **The running session on Today.** While a focus session is on, the top of Today shows its session type and task, a live countdown with how much of this focus part or break is done, and for a scheduled session, how much of the whole day's session is done and left.
+- Pause, resume, end or end a break from there too, whenever the session allows it. A scheduled session offers only your emergency pass. Pausing, ending and the pass take the same hold and reason as at the orb.
+
 ## 3.13
 
 - Restarting Ribbon to finish an update, or after saving an API key, now reopens the dashboard so you can see it's back. Before, Ribbon came back in the menu bar only, which looked like it had closed for good.
