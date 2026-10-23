@@ -10,6 +10,10 @@ import ApplicationServices
     var task = ""
     /// Something was blocked; the message is shown by the orb.
     var onBlock: ((String) -> Void)?
+    /// The browser in front can't be read during a session with site rules, so its sites can't be blocked
+    /// (nil again once it can, or once it isn't in front).
+    var onBrowserProblem: ((BrowserBridge.Problem?) -> Void)?
+    private var browserProblem: BrowserBridge.Problem?
     private var lastAction: (key: String, at: Date)?
     /// Apps already hidden once in a row; a second try within a few seconds quits them.
     private var hiddenAt: [String: Date] = [:]
@@ -28,6 +32,8 @@ import ApplicationServices
     }
 
     func check(_ o: FrontActivity, category: String, app: NSRunningApplication) {
+        let siteRules = profile.map { $0.siteMode != .off || $0.blockDistracting } ?? false
+        report(siteRules && BrowserBridge.isBrowser(o.bundleID) ? browsers.problem(app) : nil)
         guard let profile, !Self.alwaysAllowed.contains(o.bundleID) else { return }
         let distracting = rules().kind(category) == .distracting
         let isBrowser = BrowserBridge.isBrowser(o.bundleID)
@@ -54,9 +60,15 @@ import ApplicationServices
         }
         guard blockSite else { return }
         act(on: "site:" + o.domain) {
-            browsers.open(blockedPageURL(site: o.domain, session: profile.name), in: o.bundleID)
+            browsers.open(blockedPageURL(site: o.domain, session: profile.name), in: app)
             return "\(o.domain) is blocked during \(profile.name)"
         }
+    }
+
+    private func report(_ problem: BrowserBridge.Problem?) {
+        guard problem != browserProblem else { return }
+        browserProblem = problem
+        onBrowserProblem?(problem)
     }
 
     /// Hide the app (through Accessibility, which macOS always honors). If you bring it back within a few seconds,

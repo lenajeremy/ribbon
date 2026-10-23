@@ -263,6 +263,14 @@ import SwiftUI
         showToast(message, symbol: "hand.raised.fill", seconds: 4)
     }
 
+    /// Said by the orb when it starts, and on hover until it's over.
+    func browserProblem(_ problem: BrowserBridge.Problem?) {
+        guard let problem else { model.browserProblem = nil; return }
+        let summary = "Can't see which site is open in \(problem.browser), so sites there aren't blocked"
+        model.browserProblem = summary + (problem.notAllowed ? ". Allow Ribbon to control it under Privacy & Security › Automation." : ".")
+        showToast(summary, symbol: "exclamationmark.triangle.fill", seconds: 8)
+    }
+
     /// A session's score, by the orb, once its review is ready.
     func showReview(_ review: SessionReview) {
         showToast("Session score \(review.score): \(review.verdict)", symbol: "checkmark.seal.fill", seconds: 12)

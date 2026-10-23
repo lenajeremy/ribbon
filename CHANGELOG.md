@@ -2,6 +2,11 @@
 
 Ribbon shows the section for a new version when it offers you the update.
 
+## 3.15
+
+- Sites are blocked in the Chrome you're using even when another copy of Chrome is running. Tools that test or record web pages can start their own copy, and Ribbon was reading that copy's page instead of yours, so nothing in your Chrome got blocked.
+- If Ribbon can't see which site is open in your browser during a session, the orb now says so, instead of letting every site through without a word. If Ribbon's permission to control the browser is off, it says where to turn it back on, and picks it up again without a restart.
+
 ## 3.14
 
 - **The running session on Today.** While a focus session is on, the top of Today shows its session type and task, a live countdown with how much of this focus part or break is done, and for a scheduled session, how much of the whole day's session is done and left.

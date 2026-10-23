@@ -85,12 +85,14 @@ struct FrontActivity: Equatable {
         guard let app = NSWorkspace.shared.frontmostApplication else { return }
 
         let bundle = app.bundleIdentifier ?? app.localizedName ?? "unknown"
-        let cameBack = lastFront != bundle
-        lastFront = bundle
+        // By process, so moving between two copies of a browser counts as coming back to one.
+        let front = "\(bundle)|\(app.processIdentifier)"
+        let cameBack = lastFront != front
+        lastFront = front
         var observation = FrontActivity(bundleID: bundle, app: app.localizedName ?? bundle,
                                       title: WindowInfo.frontTitle(pid: app.processIdentifier) ?? "", url: "", domain: "")
         if BrowserBridge.isBrowser(bundle) {
-            observation.url = browserURL(bundle, title: observation.title, now: now, cameBack: cameBack)
+            observation.url = browserURL(app, bundle: bundle, title: observation.title, now: now, cameBack: cameBack)
             observation.domain = Domains.host(of: observation.url)
         }
         let same = current?.observation == observation
@@ -127,9 +129,9 @@ struct FrontActivity: Equatable {
     }
 
     /// Asks the browser for the tab's address only when the page may have changed. See `AddressCache`.
-    private func browserURL(_ bundle: String, title: String, now: Date, cameBack: Bool) -> String {
+    private func browserURL(_ app: NSRunningApplication, bundle: String, title: String, now: Date, cameBack: Bool) -> String {
         if let url = addresses.cached(bundle: bundle, title: title, now: now, cameBack: cameBack) { return url }
-        return addresses.record(bundle: bundle, title: title, now: now, answer: browsers.url(of: bundle) ?? "")
+        return addresses.record(bundle: bundle, title: title, now: now, answer: browsers.url(of: app) ?? "")
     }
 
     private static let videoApps: Set<String> = ["com.apple.TV", "com.apple.QuickTimePlayerX", "com.colliderli.iina", "org.videolan.vlc"]

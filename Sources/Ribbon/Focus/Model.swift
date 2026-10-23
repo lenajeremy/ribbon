@@ -32,6 +32,8 @@ enum Phase: Equatable {
     var muted = false
     /// A problem worth showing on hover, like a missing permission or a failing API.
     var status: String?
+    /// Shown on hover while the browser in front can't be read, so its sites can't be blocked.
+    var browserProblem: String?
 
     var paused: Bool { pausedAt != nil }
 

@@ -263,7 +263,7 @@ struct HoverLabel: View {
                 Text(subtitle(at: context.date))
                     .font(.system(size: 12, weight: .medium, design: .rounded).monospacedDigit())
                     .foregroundStyle(.white.opacity(0.6))
-                if let status = model.status {
+                ForEach([model.browserProblem, model.status].compactMap { $0 }, id: \.self) { status in
                     Text(status)
                         .font(.system(size: 11, weight: .medium, design: .rounded))
                         .foregroundStyle(Color(hex: 0xFFB35C))

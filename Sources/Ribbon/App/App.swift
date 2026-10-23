@@ -88,6 +88,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             self?.blocker.check(observation, category: category, app: app)
         }
         blocker.onBlock = { [weak self] message in self?.focus.blocked(message) }
+        blocker.onBrowserProblem = { [weak self] problem in self?.focus.browserProblem(problem) }
         focus.onStateChange = { [weak self] in
             guard let self else { return }
             blocker.profile = focus.enforcedProfile
