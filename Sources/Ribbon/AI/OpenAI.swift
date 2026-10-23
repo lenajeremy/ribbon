@@ -73,49 +73,101 @@ final class OpenAI: @unchecked Sendable {
     }
 
     /// A short, spoken, slightly funny line naming what the user is doing instead of their task.
-    func quip(task: String, context: String, shot: Screenshot?, previous: [String], reminder: Int) async throws -> String {
+    /// A line for the orb to say, with the sound cues only the Gemini voice performs (like "<sigh>") left in.
+    struct Quip: Sendable {
+        let spoken: String
+        /// How to perform it, chosen with the line: emotion, pace and emphasis.
+        let delivery: String
+
+        /// What the orb shows, and what voices without cues read.
+        var text: String { Self.withoutCues(spoken) }
+
+        /// The delivery, held to the tone's overall pace.
+        func style(_ tone: OrbTone) -> String {
+            delivery.trimmingCharacters(in: .whitespacesAndNewlines.union(.punctuationCharacters)) + ". " + tone.pace
+        }
+
+        static func withoutCues(_ line: String) -> String {
+            line.replacingOccurrences(of: #"\s*<[^<>]{1,30}>\s*"#, with: " ", options: .regularExpression)
+                .replacingOccurrences(of: #"\s+([.,!?;:])"#, with: "$1", options: .regularExpression)
+                .replacingOccurrences(of: #"\s{2,}"#, with: " ", options: .regularExpression)
+                .trimmingCharacters(in: .whitespaces)
+        }
+    }
+
+    func quip(task: String, context: String, shot: Screenshot?, previous: [String], reminder: Int,
+              tone: OrbTone = .friendly) async throws -> Quip {
         var instructions = """
         You are the focus orb in Ribbon, a tiny glowing orb that lives in the corner of the user's screen during a Pomodoro. \
         They said they'd work on: "\(task)". For over a minute they've been doing something else instead. \
-        Say exactly one sentence to them out loud: under 20 words, playful and a little funny, never mean. \
-        Name specifically what they're doing instead (the site, video, app or topic you can see), then nudge them back to their task. \
-        Plain spoken English: no emojis, hashtags, quotation marks or stage directions.
+
         """
-        if reminder > 1 {
-            instructions += " This is reminder number \(reminder); they ignored the last one, so be a bit more insistent (still fun)."
+        switch tone {
+        case .friendly:
+            instructions += """
+            Say exactly one sentence to them out loud: under 20 words, playful and a little funny, never mean. \
+            Name specifically what they're doing instead (the site, video, app or topic you can see), then nudge them back to their task.
+            """
+            if reminder > 1 {
+                instructions += " This is reminder number \(reminder); they ignored the last one, so be a bit more insistent (still fun)."
+            }
+        case .ruthless:
+            instructions += """
+            They chose the ruthless orb: they've asked you to say whatever it takes to get them back to work, and they won't take \
+            offense. You speak like a cold, deeply unimpressed English butler: clipped, precise and quietly contemptuous, never \
+            shouting. One or two short sentences, under 25 words in all. Name exactly what they're doing instead (the site, video, \
+            app or topic you can see). Then make it land: hold them to the goal they set, point out what this is costing them, call \
+            out the excuse they're about to make, or let your disappointment do the work. Dry sarcasm is fine; jokes and wordplay \
+            aren't. Go after what they're doing, never who they are: nothing about their looks, body, health, family or identity, \
+            no slurs, no threats, and mild swearing at most.
+            """
+            if reminder > 1 {
+                instructions += " This is reminder number \(reminder) and they ignored the last one. Colder each time: "
+                    + "by the third, no sarcasm left, only flat, quiet disappointment."
+            }
         }
+        let examples = tone == .ruthless ? "\"a weary sigh, then clipped and icy\" or \"mock-delighted, then suddenly flat\""
+                                         : "\"a sly stage whisper\" or \"bright and quick, barely holding back a laugh\""
+        instructions += """
+         Plain spoken English: no emojis, hashtags, quotation marks or stage directions in the line. \
+        An expressive voice reads it aloud, and you direct the performance. You may put up to two of these sound cues in the \
+        line, where they'd happen: <sigh>, <short pause>, <long pause>, <laugh>. In "delivery", say how to perform it in under \
+        12 words (emotion, pace, emphasis), like \(examples). Make each delivery different from the last. Describe the \
+        performance, never the voice itself (age, accent, gender).
+        """
         if !previous.isEmpty {
             instructions += " Earlier lines, which you must not repeat or open the same way: " + previous.joined(separator: " | ")
         }
         var content: [[String: Any]] = [["type": "input_text", "text": context]]
         if let shot { content.append(["type": "input_image", "image_url": shot.dataURL]) }
-        let body: [String: Any] = [
+        let schema: [String: Any] = [
+            "type": "object", "additionalProperties": false, "required": ["line", "delivery"],
+            "properties": ["line": ["type": "string"], "delivery": ["type": "string"]],
+        ]
+        let output = Self.outputText(try await respond([
             "model": Self.apiModel,
             "reasoning": ["effort": "low"],
             "max_output_tokens": 800,
             "instructions": instructions,
             "input": [["role": "user", "content": content]],
-        ]
-        let json = try await respond(body)
-        let text = (json["output"] as? [[String: Any]] ?? [])
-            .filter { $0["type"] as? String == "message" }
-            .flatMap { $0["content"] as? [[String: Any]] ?? [] }
-            .first { $0["type"] as? String == "output_text" }?["text"] as? String ?? ""
-        let line = text
-            .components(separatedBy: .newlines).first { !$0.trimmingCharacters(in: .whitespaces).isEmpty } ?? ""
-        let trimmed = line.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines.union(CharacterSet(charactersIn: "\"“”")))
-        guard !trimmed.isEmpty else { throw OpenAIError(message: "responses: empty output") }
-        return trimmed
+            "text": ["format": ["type": "json_schema", "name": "orb_line", "strict": true, "schema": schema]],
+        ]))
+        let fields = (try? JSONSerialization.jsonObject(with: Data(output.utf8))) as? [String: String]
+        let raw = fields?["line"] ?? output.components(separatedBy: .newlines).first { !$0.trimmingCharacters(in: .whitespaces).isEmpty } ?? ""
+        let line = raw.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines.union(CharacterSet(charactersIn: "\"“”")))
+        guard !Quip.withoutCues(line).isEmpty else { throw OpenAIError(message: "responses: empty output") }
+        let delivery = fields?["delivery"]?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return Quip(spoken: line, delivery: delivery.isEmpty ? tone.delivery : delivery)
     }
 
     /// MP3 audio of `text` read by an OpenAI voice.
-    func speech(_ text: String, voice: String) async throws -> Data {
+    func speech(_ text: String, voice: String, style: String = OrbTone.friendly.delivery) async throws -> Data {
         guard canSpeak else { throw OpenAIError(message: "OpenAI voices aren't part of the ChatGPT plan") }
         return try await post("audio/speech", [
             "model": "gpt-4o-mini-tts",
             "voice": voice,
             "input": text,
-            "instructions": "A cheeky, warm little sidekick. Light, quick and playful, with a smile in the voice.",
+            "instructions": style,
             "response_format": "mp3",
         ])
     }

@@ -2,6 +2,13 @@
 
 Ribbon shows the section for a new version when it offers you the update.
 
+## 3.16
+
+- **A new voice for the orb.** Add a Gemini API key in Settings › AI and the orb speaks with Gemini 3.8 Flash TTS instead of the macOS voice. Its own voice is a cold, bone-dry English butler, made in your Google project the first time it's used. You can pick any of Gemini's 30 built-in voices instead, and play a sample.
+- **Each line is performed differently.** The AI that writes what the orb says also decides how to say it, like "a weary sigh, then clipped and icy", and can add a sigh or a pause.
+- **How the orb talks to you.** Under Settings › AI, choose Friendly (playful, never mean) or Ruthless: it mocks the distraction, holds you to your goal and gets colder each time you ignore it. It goes after what you're doing, never who you are. Check-in notifications follow the same choice.
+- With a Gemini key, what the orb says aloud is sent to Google to be turned into speech.
+
 ## 3.15
 
 - Sites are blocked in the Chrome you're using even when another copy of Chrome is running. Tools that test or record web pages can start their own copy, and Ribbon was reading that copy's page instead of yours, so nothing in your Chrome got blocked.

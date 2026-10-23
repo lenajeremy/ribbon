@@ -54,7 +54,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                                         tracker: tracker, settings: settings)
         dashboard = DashboardWindow(model: dashboardModel)
         let model = dashboardModel!
-        focus = FocusController(config: config, openai: openai, store: store, assistant: assistant, settings: settings,
+        let gemini = GeminiVoice()
+        dashboardModel.gemini = gemini
+        Task { await gemini.prepare() }
+        focus = FocusController(config: config, openai: openai, gemini: gemini, store: store, assistant: assistant, settings: settings,
                                 profiles: { model.profiles })
         dashboardModel.focus = focus
         scheduler = FocusScheduler(store: store, focus: focus)

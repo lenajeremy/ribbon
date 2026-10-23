@@ -5,9 +5,10 @@ import AVFoundation
     private var player: AVAudioPlayer?
     private let synthesizer = AVSpeechSynthesizer()
 
-    func play(_ mp3: Data) {
+    /// MP3 from OpenAI or WAV from Gemini.
+    func play(_ audio: Data) {
         stop()
-        player = try? AVAudioPlayer(data: mp3)
+        player = try? AVAudioPlayer(data: audio)
         player?.isMeteringEnabled = true
         player?.play()
     }

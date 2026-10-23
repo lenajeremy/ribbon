@@ -34,6 +34,7 @@ Ribbon keeps itself up to date. It checks this repository's releases every few h
 - macOS 14 or later, Apple silicon or Intel
 - Xcode with Swift 6 (command line tools are enough to build)
 - A ChatGPT Plus or Pro plan to sign in with, or an OpenAI API key (models: `gpt-6-luna` for sorting, reviews and answers; `gpt-4o-mini-tts` for the orb's voice, which only works with a key)
+- Optional: a Gemini API key from [aistudio.google.com](https://aistudio.google.com) for the orb's voice (`gemini-3.8-flash-tts`, with Ribbon's own butler voice designed in your Google project)
 
 ### Build and run
 
@@ -65,7 +66,7 @@ Ribbon lives in the menu bar. Open the dashboard from there, or open Ribbon agai
 
 ## Privacy
 
-Your timeline, sessions, chats and settings are stored on your Mac in `~/Library/Application Support/Ribbon`. The AI sees app names, website names, page titles and totals. Screenshots are only taken during focus sessions that watch your screen, are sent to OpenAI to judge whether you're on task, and are never saved.
+Your timeline, sessions, chats and settings are stored on your Mac in `~/Library/Application Support/Ribbon`. The AI sees app names, website names, page titles and totals. Screenshots are only taken during focus sessions that watch your screen, are sent to OpenAI to judge whether you're on task, and are never saved. With a Gemini API key, what the orb says aloud is sent to Google to be turned into speech.
 
 ## Project layout
 

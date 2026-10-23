@@ -81,7 +81,13 @@ import Foundation
     // MARK: Check-ins
 
     /// A notification's title and text for a check-in, from the facts about your day.
-    func checkIn(_ facts: [String: Any]) async throws -> (title: String, body: String) {
+    func checkIn(_ facts: [String: Any], tone: OrbTone = .friendly) async throws -> (title: String, body: String) {
+        let voice = tone == .friendly
+            ? "Talk to them as \"you\". Honest, direct and warm. Never mean, never shaming. Plain words."
+            : "Talk to them as \"you\". For \"nudge\", they've asked you to be ruthless: blunt, sarcastic and cutting about what "
+                + "they're doing instead; guilt them with what they're working toward and make it sting. Go after what they did, "
+                + "never who they are: nothing about their looks, body, health, family or identity, no slurs, no threats, mild "
+                + "swearing at most. For \"encourage\", be direct and warm. Plain words."
         let data = try JSONSerialization.data(withJSONObject: facts, options: [.sortedKeys])
         let schema: [String: Any] = [
             "type": "object", "additionalProperties": false, "required": ["title", "body"],
@@ -99,8 +105,7 @@ import Foundation
                   productive or neutral work as a distraction; if nothing distracting stands out, say the day has been slow.
                 - kind "encourage": it's going well. Say specifically what went well, from the facts, and tell them to keep going. \
                   If they're turning the day around, acknowledge the slow start in a few words and praise the comeback.
-                - Talk to them as "you". Honest, direct and warm. Never mean, never shaming. Plain words. \
-                  No emojis, no hashtags, no famous quotes.
+                - \(voice) No emojis, no hashtags, no famous quotes.
                 - Use their real numbers ("52 minutes", "1h 10m") and the app and site names as given. Talk about what they did, \
                   not about categories: don't use words like "productive", "neutral" or "distracting".
                 - title: at most 6 words. body: at most 2 sentences and 180 characters.

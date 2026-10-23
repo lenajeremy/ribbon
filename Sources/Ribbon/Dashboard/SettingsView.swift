@@ -1,5 +1,6 @@
 import AppKit
 import ApplicationServices
+import AVFoundation
 import SwiftUI
 
 /// Settings as a modal with a list of sections on the left, like ChatGPT's: each row is a name,
@@ -185,11 +186,12 @@ struct SettingsView: View {
                 }
             }
             SettingRow("Models", openai.usesPlan
-                       ? "Your plan's model does everything, including the yes-or-no questions an API key sends to the Decisions API. The orb speaks with a macOS voice and checks your screen every 30 seconds."
+                       ? "Your plan's model does everything, including the yes-or-no questions an API key sends to the Decisions API. The orb checks your screen every 30 seconds."
                        : "Sorting apps and sites and picking session types use the Decisions API; summaries and answers use the Responses API (gpt-6-luna).") {
                 EmptyView()
             }
-            SettingRow("What the AI sees", "App names, website names, page titles and totals. Screenshots only during focus sessions that watch your screen, and they're never saved.") {
+            if let gemini = model.gemini { OrbVoiceRows(gemini: gemini, settings: model.settings) }
+            SettingRow("What the AI sees", "App names, website names, page titles and totals. Screenshots only during focus sessions that watch your screen, and they're never saved. With a Gemini key, what the orb says aloud also goes to Google to be turned into speech.") {
                 EmptyView()
             }
         case .data:
@@ -350,6 +352,84 @@ private struct ChatGPTPlanRow: View {
         let revoked = await auth.signOut()
         note = revoked ? nil : "Signed out on this Mac. Ribbon couldn't reach OpenAI to disconnect, so remove Ribbon in ChatGPT settings to finish."
         changed()
+    }
+}
+
+/// The orb's voice and manner: a Gemini key, which voice, and how it talks to you when you drift.
+private struct OrbVoiceRows: View {
+    let gemini: GeminiVoice
+    let settings: Settings
+    @State private var newKey = ""
+    @State private var connected: Bool
+    @State private var voice: String
+    @State private var player: AVAudioPlayer?
+    @State private var sampling = false
+    @State private var sampleError: String?
+
+    init(gemini: GeminiVoice, settings: Settings) {
+        self.gemini = gemini
+        self.settings = settings
+        _connected = State(initialValue: gemini.isAvailable)
+        _voice = State(initialValue: gemini.voice)
+    }
+
+    var body: some View {
+        SettingRow("Gemini API key", connected
+                   ? "Connected. The orb speaks with Gemini 3.8 Flash TTS. Paste a different key to replace it."
+                   : "Optional, from aistudio.google.com. The orb then speaks with Gemini 3.8 Flash TTS instead of a macOS voice. What it says aloud is sent to Google to be turned into speech.") {
+            HStack(spacing: 8) {
+                SecureField("AIza…", text: $newKey)
+                    .textFieldStyle(.plain).font(.system(size: 13))
+                    .padding(.horizontal, 10).frame(width: 190, height: 30)
+                    .background(Theme.bubble, in: RoundedRectangle(cornerRadius: 8))
+                Button("Save") {
+                    if gemini.setKey(newKey) {
+                        connected = gemini.isAvailable
+                        Task { await gemini.prepare() }
+                    }
+                    newKey = ""
+                }
+                .buttonStyle(PillButtonStyle(primary: true))
+                .fixedSize()
+                .disabled(newKey.trimmingCharacters(in: .whitespaces).isEmpty)
+            }
+        }
+        if connected {
+            SettingRow("Orb's voice", sampleError ?? (voice == GeminiVoice.ribbonVoice
+                       ? "Ribbon's own voice, a bone-dry English butler. It's made in your Google project when you first choose it."
+                       : "One of Gemini's built-in voices.")) {
+                HStack(spacing: 8) {
+                    Dropdown(selection: voice, options: [(GeminiVoice.ribbonVoice, "Ribbon's butler")] + GeminiVoice.builtIn.map { ($0, $0) }) {
+                        voice = $0
+                        gemini.voice = $0
+                        Task { await gemini.prepare() }
+                    }
+                    Button(sampling ? "Playing…" : "Play sample") { Task { await playSample() } }
+                        .buttonStyle(PillButtonStyle())
+                        .fixedSize()
+                        .disabled(sampling)
+                }
+            }
+        }
+        SettingRow("How the orb talks to you", settings.orbTone.detail + " Its check-ins too.") {
+            Dropdown(selection: settings.orbTone, options: OrbTone.allCases.map { ($0, $0.label) }) { settings.orbTone = $0 }
+        }
+    }
+
+    private func playSample() async {
+        sampling = true
+        sampleError = nil
+        defer { sampling = false }
+        let sample = settings.orbTone == .ruthless
+            ? OpenAI.Quip(spoken: "Eleven minutes of cat videos. <sigh> I had hoped for rather more from you today.",
+                          delivery: "a weary sigh, then clipped and icy")
+            : OpenAI.Quip(spoken: "That video looks fun, but your task misses you. Back to it?", delivery: "bright and quick, amused")
+        do {
+            player = try AVAudioPlayer(data: try await gemini.speech(sample.spoken, style: sample.style(settings.orbTone), voice: voice))
+            player?.play()
+        } catch {
+            sampleError = "Couldn't play a sample: \(error.localizedDescription)"
+        }
     }
 }
 

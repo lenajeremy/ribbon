@@ -83,6 +83,7 @@ struct Chat: Identifiable, Hashable, Codable {
     @ObservationIgnored let tracker: ActivityTracker
     @ObservationIgnored let settings: Settings
     @ObservationIgnored var focus: FocusController?
+    @ObservationIgnored var gemini: GeminiVoice?
     @ObservationIgnored var updater: Updater?
     @ObservationIgnored var scheduler: FocusScheduler? {
         didSet { schedules = scheduler?.schedules ?? [] }

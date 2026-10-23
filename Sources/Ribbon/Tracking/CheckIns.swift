@@ -81,7 +81,7 @@ import Foundation
         Task {
             var message = Self.fallback(decision, today: today, recent: recent, window: window, rules: reports.rules)
             if assistant.enabled {
-                do { message = try await assistant.checkIn(facts) } catch { logLine("Check-in AI failed: \(error.localizedDescription)") }
+                do { message = try await assistant.checkIn(facts, tone: settings.orbTone) } catch { logLine("Check-in AI failed: \(error.localizedDescription)") }
             }
             Notifier.post(title: message.title, body: message.body)
             logLine("Check-in (\(decision.kind.rawValue), \(decision.reason(minutes: Int(window / 60)))): \(message.body)")

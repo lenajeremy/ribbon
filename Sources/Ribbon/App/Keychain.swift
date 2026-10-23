@@ -1,12 +1,13 @@
 import AppKit
 import Security
 
-/// The OpenAI API key you enter in Settings, kept in your login keychain.
+/// The API keys you enter in Settings, kept in your login keychain.
 enum APIKeyStore {
+    static let openAI = "OpenAI API key"
+    static let gemini = "Gemini API key"
     private static let service = "Ribbon"
-    private static let account = "OpenAI API key"
 
-    static func read() -> String? {
+    static func read(_ account: String = openAI) -> String? {
         let query: [String: Any] = [kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: service,
                                     kSecAttrAccount as String: account, kSecReturnData as String: true]
         var result: AnyObject?
@@ -15,7 +16,7 @@ enum APIKeyStore {
     }
 
     @discardableResult
-    static func save(_ key: String) -> Bool {
+    static func save(_ key: String, as account: String = openAI) -> Bool {
         let base: [String: Any] = [kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: service,
                                    kSecAttrAccount as String: account]
         SecItemDelete(base as CFDictionary)

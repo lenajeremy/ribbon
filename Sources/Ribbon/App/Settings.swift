@@ -13,6 +13,7 @@ import ServiceManagement
     var automaticUpdates: Bool { didSet { defaults.set(automaticUpdates, forKey: "automaticUpdates") } }
     var checkIns: Bool { didSet { defaults.set(checkIns, forKey: "checkIns") } }
     var checkInMinutes: Int { didSet { defaults.set(checkInMinutes, forKey: "checkInMinutes") } }
+    var orbTone: OrbTone { didSet { defaults.set(orbTone.rawValue, forKey: "orbTone") } }
 
     var focusGoal: TimeInterval { focusGoalHours * 3600 }
     var breakInterval: TimeInterval { TimeInterval(breakIntervalMinutes * 60) }
@@ -31,7 +32,7 @@ import ServiceManagement
     init() {
         defaults.register(defaults: ["idleMinutes": 5, "focusGoalHours": 4.0, "breakReminders": true,
                                      "breakIntervalMinutes": 50, "showOrbWhenIdle": true, "automaticUpdates": true,
-                                     "checkIns": true, "checkInMinutes": 30])
+                                     "checkIns": true, "checkInMinutes": 30, "orbTone": OrbTone.friendly.rawValue])
         idleMinutes = defaults.integer(forKey: "idleMinutes")
         focusGoalHours = defaults.double(forKey: "focusGoalHours")
         breakReminders = defaults.bool(forKey: "breakReminders")
@@ -40,5 +41,32 @@ import ServiceManagement
         automaticUpdates = defaults.bool(forKey: "automaticUpdates")
         checkIns = defaults.bool(forKey: "checkIns")
         checkInMinutes = defaults.integer(forKey: "checkInMinutes")
+        orbTone = OrbTone(rawValue: defaults.string(forKey: "orbTone") ?? "") ?? .friendly
+    }
+}
+
+/// How the orb talks to you when you drift: out loud, and in check-ins.
+enum OrbTone: String, CaseIterable, Sendable {
+    case friendly, ruthless
+
+    var label: String { self == .friendly ? "Friendly" : "Ruthless" }
+
+    var detail: String {
+        switch self {
+        case .friendly: "Playful and a little funny, never mean."
+        case .ruthless: "Mocks you, guilt-trips you and dares you, whatever gets you back to your task. "
+            + "It goes after what you're doing, never who you are."
+        }
+    }
+
+    /// The pace every line keeps, whatever its delivery.
+    var pace: String { self == .friendly ? "Quick and light overall." : "Brisk overall, never drawn out." }
+
+    /// How a line is read aloud when nothing more specific was chosen for it.
+    var delivery: String {
+        switch self {
+        case .friendly: "A cheeky, warm little sidekick. Light, quick and playful, with a smile in the voice."
+        case .ruthless: "Cold and clipped, with quiet, perfectly polite contempt."
+        }
     }
 }

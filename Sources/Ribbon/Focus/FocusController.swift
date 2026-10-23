@@ -9,6 +9,7 @@ import SwiftUI
     private let store: Store
     private let assistant: Assistant
     private let settings: Settings
+    private let gemini: GeminiVoice
     private let profiles: () -> [SessionProfile]
     private(set) var activeProfile: SessionProfile?
     private var sessionID: Int64?
@@ -48,7 +49,7 @@ import SwiftUI
     private var screensAsleep = false
 
     // Drift tracking for the current Pomodoro.
-    private struct Line { let text: String; let audio: Data? }
+    private struct Line { let text: String; var delivery = ""; let audio: Data? }
     private var driftSince: Date?
     private var lastNudgeAt: Date?
     private var nudgeCount = 0
@@ -58,10 +59,11 @@ import SwiftUI
     private var episode = 0
     private var spokenLines: [String] = []
 
-    init(config: Config, openai: OpenAI, store: Store, assistant: Assistant, settings: Settings,
+    init(config: Config, openai: OpenAI, gemini: GeminiVoice, store: Store, assistant: Assistant, settings: Settings,
          profiles: @escaping () -> [SessionProfile]) {
         self.config = config
         self.openai = openai
+        self.gemini = gemini
         self.store = store
         self.assistant = assistant
         self.settings = settings
@@ -495,21 +497,31 @@ import SwiftUI
     }
 
     private func prepareLine(shot: Screenshot?, context: String) -> Task<Line, Never> {
-        let openai = openai, task = model.task, previous = spokenLines, reminder = nudgeCount + 1
-        let voice = config.voice, muted = model.muted
+        let openai = openai, gemini = gemini, task = model.task, previous = spokenLines, reminder = nudgeCount + 1
+        let voice = config.voice, muted = model.muted, tone = settings.orbTone
         return Task.detached {
-            let text: String
+            let quip: OpenAI.Quip
             do {
-                text = try await openai.quip(task: task, context: context, shot: shot, previous: previous, reminder: reminder)
+                quip = try await openai.quip(task: task, context: context, shot: shot, previous: previous, reminder: reminder, tone: tone)
             } catch {
                 if Task.isCancelled { return Line(text: "", audio: nil) }
                 logLine("Couldn't write a line: \(error.localizedDescription)")
-                text = "Hey, that doesn't look like \(task). Back to it?"
+                quip = OpenAI.Quip(spoken: "Hey, that doesn't look like \(task). Back to it?", delivery: tone.delivery)
             }
-            // Without an OpenAI voice (on the ChatGPT plan), the macOS voice reads it.
-            if muted || Task.isCancelled || !openai.canSpeak { return Line(text: text, audio: nil) }
+            let text = quip.text, style = quip.style(tone)
+            if muted || Task.isCancelled { return Line(text: text, delivery: quip.delivery, audio: nil) }
+            // Gemini's voice with a Gemini key (performing the line's sound cues), then OpenAI's with an API key
+            // (not on the ChatGPT plan), then the macOS voice.
+            if gemini.isAvailable {
+                do {
+                    return Line(text: text, delivery: quip.delivery, audio: try await gemini.speech(quip.spoken, style: style))
+                } catch {
+                    if !Task.isCancelled { logLine("Gemini voice failed: \(error.localizedDescription)") }
+                }
+            }
+            if Task.isCancelled || !openai.canSpeak { return Line(text: text, delivery: quip.delivery, audio: nil) }
             do {
-                return Line(text: text, audio: try await openai.speech(text, voice: voice))
+                return Line(text: text, delivery: quip.delivery, audio: try await openai.speech(text, voice: voice, style: style))
             } catch {
                 if !Task.isCancelled { logLine("OpenAI voice failed, using the macOS voice: \(error.localizedDescription)") }
                 return Line(text: text, audio: nil)
@@ -529,7 +541,7 @@ import SwiftUI
         lastNudgeAt = Date()
         if let sessionID { store.countSession(sessionID, nudge: true) }
         spokenLines.append(line.text)
-        logLine("Nudge #\(nudgeCount): \(line.text)")
+        logLine("Nudge #\(nudgeCount): \(line.text)" + (line.delivery.isEmpty ? "" : " [\(line.delivery)]"))
 
         if model.nudging {
             withAnimation(.easeInOut(duration: 0.4)) { model.nudgeText = line.text }
