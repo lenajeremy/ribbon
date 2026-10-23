@@ -228,6 +228,12 @@ private let transient = unsafeBitCast(-1, to: sqlite3_destructor_type.self)
             .first.flatMap { $0.isNull(0) ? nil : Date(timeIntervalSince1970: $0.double(0)) }
     }
 
+    /// Emergency passes used since `date`: when, and the reason given.
+    func emergencyPasses(since date: Date) -> [(used: Date, reason: String)] {
+        rows("SELECT used, reason FROM emergency_passes WHERE used >= ? ORDER BY used", [date])
+            .map { (Date(timeIntervalSince1970: $0.double(0)), $0.text(1)) }
+    }
+
     func useEmergencyPass(window: String, reason: String, at date: Date = Date()) {
         run("INSERT INTO emergency_passes (used, window, reason) VALUES (?,?,?)", [date, window, reason])
     }

@@ -190,7 +190,7 @@ struct SettingsView: View {
                        : "Sorting apps and sites and picking session types use the Decisions API; summaries and answers use the Responses API (gpt-6-luna).") {
                 EmptyView()
             }
-            if let gemini = model.gemini { OrbVoiceRows(gemini: gemini, settings: model.settings) }
+            if let gemini = model.gemini { OrbVoiceRows(gemini: gemini, settings: model.settings, focus: model.focus) }
             SettingRow("What the AI sees", "App names, website names, page titles and totals. Screenshots only during focus sessions that watch your screen, and they're never saved. With a Gemini key, what the orb says aloud also goes to Google to be turned into speech.") {
                 EmptyView()
             }
@@ -359,16 +359,21 @@ private struct ChatGPTPlanRow: View {
 private struct OrbVoiceRows: View {
     let gemini: GeminiVoice
     let settings: Settings
+    let focus: FocusController?
     @State private var newKey = ""
     @State private var connected: Bool
     @State private var voice: String
     @State private var player: AVAudioPlayer?
     @State private var sampling = false
     @State private var sampleError: String?
+    /// The last ruthless sample: which level, and what it said.
+    @State private var sampleNote: String?
+    @State private var sampleLevel = 0
 
-    init(gemini: GeminiVoice, settings: Settings) {
+    init(gemini: GeminiVoice, settings: Settings, focus: FocusController?) {
         self.gemini = gemini
         self.settings = settings
+        self.focus = focus
         _connected = State(initialValue: gemini.isAvailable)
         _voice = State(initialValue: gemini.voice)
     }
@@ -395,7 +400,7 @@ private struct OrbVoiceRows: View {
             }
         }
         if connected {
-            SettingRow("Orb's voice", sampleError ?? (voice == GeminiVoice.ribbonVoice
+            SettingRow("Orb's voice", sampleError ?? sampleNote ?? (voice == GeminiVoice.ribbonVoice
                        ? "Ribbon's own voice, a bone-dry English butler. It's made in your Google project when you first choose it."
                        : "One of Gemini's built-in voices.")) {
                 HStack(spacing: 8) {
@@ -404,7 +409,7 @@ private struct OrbVoiceRows: View {
                         gemini.voice = $0
                         Task { await gemini.prepare() }
                     }
-                    Button(sampling ? "Playing…" : "Play sample") { Task { await playSample() } }
+                    Button(sampling ? "Playing…" : settings.orbTone == .ruthless ? "Roast me" : "Play sample") { Task { await playSample() } }
                         .buttonStyle(PillButtonStyle())
                         .fixedSize()
                         .disabled(sampling)
@@ -420,10 +425,19 @@ private struct OrbVoiceRows: View {
         sampling = true
         sampleError = nil
         defer { sampling = false }
-        let sample = settings.orbTone == .ruthless
-            ? OpenAI.Quip(spoken: "Eleven minutes of cat videos. <sigh> I had hoped for rather more from you today.",
-                          delivery: "a weary sigh, then clipped and icy")
-            : OpenAI.Quip(spoken: "That video looks fun, but your task misses you. Back to it?", delivery: "bright and quick, amused")
+        var sample = OpenAI.Quip(spoken: "That video looks fun, but your task misses you. Back to it?", delivery: "bright and quick, amused")
+        sampleNote = nil
+        if settings.orbTone == .ruthless {
+            // A real roast from today's activity, one level harsher each time you ask.
+            sampleLevel = sampleLevel % 4 + 1
+            if let roast = await focus?.sampleRoast(level: sampleLevel) {
+                sample = roast
+                sampleNote = "Level \(sampleLevel) of 4: \(roast.text)"
+            } else {
+                sample = OpenAI.Quip(spoken: "Eleven minutes of cat videos. <sigh> Pathetic, even by your standards.",
+                                     delivery: "cold contempt, a sneer on the last word")
+            }
+        }
         do {
             player = try AVAudioPlayer(data: try await gemini.speech(sample.spoken, style: sample.style(settings.orbTone), voice: voice))
             player?.play()

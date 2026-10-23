@@ -54,8 +54,8 @@ enum OrbTone: String, CaseIterable, Sendable {
     var detail: String {
         switch self {
         case .friendly: "Playful and a little funny, never mean."
-        case .ruthless: "Mocks you, guilt-trips you and dares you, whatever gets you back to your task. "
-            + "It goes after what you're doing, never who you are."
+        case .ruthless: "Brutal and unhinged. It roasts you with your whole day, swears, insults you, and screams by the fifth "
+            + "time you ignore it or wave it off. It never touches self-harm, slurs or threats."
         }
     }
 
@@ -66,7 +66,7 @@ enum OrbTone: String, CaseIterable, Sendable {
     var delivery: String {
         switch self {
         case .friendly: "A cheeky, warm little sidekick. Light, quick and playful, with a smile in the voice."
-        case .ruthless: "Cold and clipped, with quiet, perfectly polite contempt."
+        case .ruthless: "Savage, contemptuous and sharp."
         }
     }
 }

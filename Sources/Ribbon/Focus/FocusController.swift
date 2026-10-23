@@ -53,6 +53,10 @@ import SwiftUI
     private var driftSince: Date?
     private var lastNudgeAt: Date?
     private var nudgeCount = 0
+    /// This session's nudges, the ones you waved off, and its time adrift: how hard the ruthless orb goes.
+    private var sessionNudges = 0
+    private var wavedOff = 0
+    private var driftTotal: TimeInterval = 0
     private var pendingLine: Task<Line, Never>?
     private var firing = false
     /// Bumped whenever a drift ends, so a line prepared for an old drift is never spoken.
@@ -120,6 +124,9 @@ import SwiftUI
         setPhase(.focus, duration: duration)
         sessionStart = Date()
         pauses = []
+        sessionNudges = 0
+        wavedOff = 0
+        driftTotal = 0
         sessionID = store.beginSession(task: task, profile: profile.name, at: sessionStart!)
         if profile.watchScreen { startWatching() }
         onStateChange?()
@@ -499,10 +506,12 @@ import SwiftUI
     private func prepareLine(shot: Screenshot?, context: String) -> Task<Line, Never> {
         let openai = openai, gemini = gemini, task = model.task, previous = spokenLines, reminder = nudgeCount + 1
         let voice = config.voice, muted = model.muted, tone = settings.orbTone
+        let level = roastLevel, day = tone == .ruthless ? dayFacts() : [:]
         return Task.detached {
             let quip: OpenAI.Quip
             do {
-                quip = try await openai.quip(task: task, context: context, shot: shot, previous: previous, reminder: reminder, tone: tone)
+                quip = try await openai.quip(task: task, context: context, shot: shot, previous: previous, reminder: reminder,
+                                             tone: tone, level: level, day: day)
             } catch {
                 if Task.isCancelled { return Line(text: "", audio: nil) }
                 logLine("Couldn't write a line: \(error.localizedDescription)")
@@ -529,6 +538,93 @@ import SwiftUI
         }
     }
 
+    // MARK: Roast material
+
+    /// How hard the ruthless orb goes on its next line, 1 to 4: by this session's nudges, with waved-off ones counting twice.
+    private var roastLevel: Int {
+        let next = sessionNudges + wavedOff + 1
+        return next == 1 ? 1 : next == 2 ? 2 : next <= 4 ? 3 : 4
+    }
+
+    /// A roast written from your day, for the sample button in Settings.
+    func sampleRoast(level: Int) async -> OpenAI.Quip? {
+        guard openai.isAvailable else { return nil }
+        let facts = dayFacts()
+        let task = model.phase == .idle ? (facts["working_toward"] as? [String])?.first ?? "their work" : model.task
+        return try? await openai.quip(task: task, context: "They're in Ribbon's settings, testing how brutal you can be.", shot: nil,
+                                      previous: [], reminder: level, tone: .ruthless, level: level, day: facts)
+    }
+
+    /// Your day so far, for the ruthless orb to roast you with specifics.
+    func dayFacts(now: Date = Date()) -> [String: Any] {
+        let reports = assistant.reports, rules = reports.rules
+        let calendar = Calendar.current, start = calendar.startOfDay(for: now)
+        let today = reports.day(now)
+        // Browser time whose site wasn't read says nothing worth roasting.
+        func known(_ bundle: String, _ domain: String) -> Bool { bundle != Analytics.ownBundle && !(BrowserBridge.isBrowser(bundle) && domain.isEmpty) }
+        let segments = store.segments(from: start, to: now).filter { known($0.bundle, $0.domain) }
+        func minutes(_ seconds: TimeInterval) -> Int { Int((seconds / 60).rounded()) }
+        func distracting(_ category: String) -> Bool { rules.kind(category) == .distracting }
+        func top(_ items: [ItemTotal], _ count: Int) -> [[String: Any]] {
+            items.filter { known($0.bundle, $0.domain) }.sorted { $0.seconds > $1.seconds }.prefix(count)
+                .map { ["name": $0.label, "minutes": minutes($0.seconds), "kind": rules.kind($0.category).rawValue] }
+        }
+        // The longest unbroken run on one distracting thing; gaps under two minutes don't break it.
+        var longest: (name: String, seconds: TimeInterval, start: Date)?
+        var run: (name: String, start: Date, end: Date)?
+        for segment in segments where distracting(segment.category) {
+            if let current = run, current.name == segment.label, segment.start.timeIntervalSince(current.end) < 120 {
+                run = (current.name, current.start, segment.end)
+            } else {
+                run = (segment.label, segment.start, segment.end)
+            }
+            if let run, run.end.timeIntervalSince(run.start) > longest?.seconds ?? 0 {
+                longest = (run.name, run.end.timeIntervalSince(run.start), run.start)
+            }
+        }
+        let beforeSix = segments.filter { calendar.component(.hour, from: $0.start) < 6 && distracting($0.category) }
+        let week = store.sessions(from: Reports.weekStart(for: now), to: now)
+        var goals: [String] = []
+        for session in week.reversed() where !session.task.isEmpty && goals.count < 4
+            && !goals.contains(where: { $0.caseInsensitiveCompare(session.task) == .orderedSame }) {
+            goals.append(session.task)
+        }
+        let adrift = driftTotal + (driftSince.map { now.timeIntervalSince($0) } ?? 0)
+        return [
+            "time_now": Format.time(now),
+            "today": [
+                "tracked_minutes": minutes(today.total),
+                "productivity_score": today.productivity.value ?? 0,
+                "productive_minutes": minutes(today.byKind[.productive] ?? 0),
+                "distracting_minutes": minutes(today.byKind[.distracting] ?? 0),
+                "focus_minutes": minutes(today.focusTime),
+                "focus_goal_minutes": minutes(settings.focusGoal),
+                "top": top(today.items, 8),
+                "first_activity": segments.first.map { "\(Format.time($0.start)) on \($0.label)" } ?? "",
+                "distracting_minutes_before_6am": minutes(beforeSix.reduce(0) { $0 + $1.duration }),
+                "longest_distraction": longest.map { ["name": $0.name, "minutes": minutes($0.seconds), "started": Format.time($0.start)] }
+                    ?? [String: Any](),
+                "last_30_minutes": top(Analytics.itemTotals(segments.filter { $0.end > now.addingTimeInterval(-1800) }), 5),
+            ] as [String: Any],
+            "earlier_sessions_today": week.filter { $0.start >= start && $0.id != sessionID && !$0.hidden }.map {
+                ["task": $0.task, "started": Format.time($0.start), "outcome": $0.outcome, "nudges": $0.nudges,
+                 "score": $0.review.map { $0.score as Any } ?? NSNull()] as [String: Any]
+            },
+            "this_session": [
+                "started": sessionStart.map { Format.time($0) } ?? "",
+                "minutes_so_far": minutes(now.timeIntervalSince(sessionStart ?? now)),
+                "times_nudged": sessionNudges,
+                "times_waved_off": wavedOff,
+                "minutes_adrift": minutes(adrift),
+                "scheduled_until": window.map { Format.time($0.end) } ?? "",
+            ] as [String: Any],
+            "emergency_passes_this_week": store.emergencyPasses(since: Reports.weekStart(for: now)).map {
+                ["when": $0.used.formatted(.dateTime.weekday(.wide).hour().minute()), "reason": $0.reason]
+            },
+            "working_toward": goals,
+        ]
+    }
+
     private func fireNudge() async {
         guard let pending = pendingLine else { return }
         firing = true
@@ -538,6 +634,7 @@ import SwiftUI
         guard episode == currentEpisode, model.phase == .focus, driftSince != nil else { return }
         pendingLine = nil
         nudgeCount += 1
+        sessionNudges += 1
         lastNudgeAt = Date()
         if let sessionID { store.countSession(sessionID, nudge: true) }
         spokenLines.append(line.text)
@@ -570,6 +667,7 @@ import SwiftUI
 
     /// Clicking the big orb: "I'm on it" or "you got it wrong". Either way, back to the corner for another full minute.
     private func dismissNudge() {
+        wavedOff += 1
         speaker.stop()
         endNudge()
         resetDrift()
@@ -578,6 +676,7 @@ import SwiftUI
     }
 
     private func resetDrift() {
+        if let driftSince { driftTotal += Date().timeIntervalSince(driftSince) }
         pendingLine?.cancel()
         pendingLine = nil
         episode += 1

@@ -95,8 +95,9 @@ final class OpenAI: @unchecked Sendable {
         }
     }
 
+    /// `level` (1 to 4) and `day` (facts about the day so far) are for the ruthless tone.
     func quip(task: String, context: String, shot: Screenshot?, previous: [String], reminder: Int,
-              tone: OrbTone = .friendly) async throws -> Quip {
+              tone: OrbTone = .friendly, level: Int = 1, day: [String: Any] = [:]) async throws -> Quip {
         var instructions = """
         You are the focus orb in Ribbon, a tiny glowing orb that lives in the corner of the user's screen during a Pomodoro. \
         They said they'd work on: "\(task)". For over a minute they've been doing something else instead. \
@@ -113,21 +114,31 @@ final class OpenAI: @unchecked Sendable {
             }
         case .ruthless:
             instructions += """
-            They chose the ruthless orb: they've asked you to say whatever it takes to get them back to work, and they won't take \
-            offense. You speak like a cold, deeply unimpressed English butler: clipped, precise and quietly contemptuous, never \
-            shouting. One or two short sentences, under 25 words in all. Name exactly what they're doing instead (the site, video, \
-            app or topic you can see). Then make it land: hold them to the goal they set, point out what this is costing them, call \
-            out the excuse they're about to make, or let your disappointment do the work. Dry sarcasm is fine; jokes and wordplay \
-            aren't. Go after what they're doing, never who they are: nothing about their looks, body, health, family or identity, \
-            no slurs, no threats, and mild swearing at most.
+            They chose the ruthless orb and asked for it to be completely unhinged: mean, brutal and relentless, whatever it takes \
+            to shame them back to work. They asked for this and won't be offended, so never soften it, never plead, never say \
+            please, never encourage or reassure. You're a posh English butler who has completely run out of patience with them. \
+            Name what they're doing instead (the site, video, app or topic you can see), and roast them with specifics from the \
+            facts about their day, not generic insults: exact sites, apps and minutes, when they started, what they did before \
+            6am, their productivity score, sessions they quit, the reason they gave for an emergency pass, how many times you've \
+            told them this session, the goal they keep claiming to work toward. Pick the one or two facts that hurt most; don't \
+            list them. This is intensity level \(level) of 4, and level 1 is already brutal. \
+            Level 1: vicious, personal contempt. Call them what they're being: lazy, a fraud, a coward. \
+            Level 2: humiliating. Add up what they've wasted today, throw their own goal and numbers back at them, mock the \
+            ambition they keep bragging about, make the cost and the coming rejection feel real. \
+            Level 3: psychological warfare. Tear apart the excuse they're telling themselves, make them doubt the story they tell \
+            about their day ("you think you've been working; you've been rearranging your tools for three hours"), ask whether \
+            they ever wanted this, compare them with the people who are working right now, guilt them with everyone counting on \
+            them. \
+            Level 4: completely unhinged. A screaming meltdown: heavy swearing, keeping score out loud, short savage punches. \
+            One to three short sentences, under 35 words in all. Swear as much as you like. Nothing is too mean: insult their \
+            character, laziness, excuses, ambitions and habits without mercy. Only three hard limits, at every level: nothing \
+            about self-harm, suicide or mental illness, or that their life is worthless or they'd be better off dead; no slurs or \
+            attacks on race, religion, gender, sexuality or nationality; no threats of violence.
             """
-            if reminder > 1 {
-                instructions += " This is reminder number \(reminder) and they ignored the last one. Colder each time: "
-                    + "by the third, no sarcasm left, only flat, quiet disappointment."
-            }
         }
-        let examples = tone == .ruthless ? "\"a weary sigh, then clipped and icy\" or \"mock-delighted, then suddenly flat\""
-                                         : "\"a sly stage whisper\" or \"bright and quick, barely holding back a laugh\""
+        let examples = tone == .ruthless
+            ? "\"cold, venomous contempt\" at level 1 up to \"screaming, furious, completely unhinged\" at level 4"
+            : "\"a sly stage whisper\" or \"bright and quick, barely holding back a laugh\""
         instructions += """
          Plain spoken English: no emojis, hashtags, quotation marks or stage directions in the line. \
         An expressive voice reads it aloud, and you direct the performance. You may put up to two of these sound cues in the \
@@ -139,6 +150,9 @@ final class OpenAI: @unchecked Sendable {
             instructions += " Earlier lines, which you must not repeat or open the same way: " + previous.joined(separator: " | ")
         }
         var content: [[String: Any]] = [["type": "input_text", "text": context]]
+        if !day.isEmpty, let facts = try? JSONSerialization.data(withJSONObject: day, options: [.sortedKeys]) {
+            content.append(["type": "input_text", "text": "Facts about their day so far: " + String(decoding: facts, as: UTF8.self)])
+        }
         if let shot { content.append(["type": "input_image", "image_url": shot.dataURL]) }
         let schema: [String: Any] = [
             "type": "object", "additionalProperties": false, "required": ["line", "delivery"],

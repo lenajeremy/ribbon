@@ -4,7 +4,7 @@ import Foundation
 /// session types from a description, and which session type fits a task.
 @MainActor final class Assistant {
     let openai: OpenAI
-    private let reports: Reports
+    let reports: Reports
 
     init(openai: OpenAI, reports: Reports) {
         self.openai = openai
@@ -84,10 +84,12 @@ import Foundation
     func checkIn(_ facts: [String: Any], tone: OrbTone = .friendly) async throws -> (title: String, body: String) {
         let voice = tone == .friendly
             ? "Talk to them as \"you\". Honest, direct and warm. Never mean, never shaming. Plain words."
-            : "Talk to them as \"you\". For \"nudge\", they've asked you to be ruthless: blunt, sarcastic and cutting about what "
-                + "they're doing instead; guilt them with what they're working toward and make it sting. Go after what they did, "
-                + "never who they are: nothing about their looks, body, health, family or identity, no slurs, no threats, mild "
-                + "swearing at most. For \"encourage\", be direct and warm. Plain words."
+            : "Talk to them as \"you\". For \"nudge\", they've asked for brutal: mean, unhinged and relentless. Roast them with the "
+                + "real names and numbers from the facts, throw what they're working toward back at them, and swear if it lands. "
+                + "Nothing is too mean: insult their character, laziness, excuses and ambitions without mercy. Only three limits: "
+                + "nothing about self-harm, suicide or mental illness, or that their life is worthless; no slurs or attacks on "
+                + "race, religion, gender, sexuality or nationality; no threats of violence. "
+                + "For \"encourage\", be direct and warm. Plain words."
         let data = try JSONSerialization.data(withJSONObject: facts, options: [.sortedKeys])
         let schema: [String: Any] = [
             "type": "object", "additionalProperties": false, "required": ["title", "body"],

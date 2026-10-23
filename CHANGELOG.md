@@ -2,6 +2,13 @@
 
 Ribbon shows the section for a new version when it offers you the update.
 
+## 3.17
+
+- **The ruthless orb is brutal now.** It roasts you with your whole day: the first thing you opened, your minutes on each app and site, your productivity score, your longest distraction, anything distracting before 6am, earlier sessions and how many nudges they took, and the reasons you gave for emergency passes. It insults you, swears, and gets nastier every time you ignore it, until it's screaming by the fifth nudge. Waving it off counts double. It never touches self-harm, slurs or threats.
+- Check-ins are just as brutal when the orb is set to Ruthless.
+- **Roast me.** With Ruthless on, the sample button in Settings › AI writes a real roast from your day, one level harsher each time you click.
+- Fixed: the orb's escalation started over every time you waved it off, so it rarely got past its first line.
+
 ## 3.16
 
 - **A new voice for the orb.** Add a Gemini API key in Settings › AI and the orb speaks with Gemini 3.8 Flash TTS instead of the macOS voice. Its own voice is a cold, bone-dry English butler, made in your Google project the first time it's used. You can pick any of Gemini's 30 built-in voices instead, and play a sample.
