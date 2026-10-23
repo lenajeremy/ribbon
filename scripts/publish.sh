@@ -1,6 +1,7 @@
 #!/bin/zsh
 # Publishes dist/Ribbon.dmg and dist/Ribbon.zip as a GitHub release, with this version's section of
 # CHANGELOG.md as its notes. Run scripts/release.sh first. Copies of Ribbon update from these releases.
+# Then removes dist, so Spotlight finds only the Ribbon in Applications (the release keeps the files).
 set -euo pipefail
 cd "$(dirname "$0")/.."
 source scripts/make_bundle.sh
@@ -24,3 +25,6 @@ if ! git -C "$TAP" diff --quiet; then
     echo "Updated the Homebrew cask to $RIBBON_VERSION."
 fi
 rm -rf "$TAP"
+
+# The release has the zip and disk image now; a built copy left here shows up in Spotlight next to the real one.
+rm -rf dist
