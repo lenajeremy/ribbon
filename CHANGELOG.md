@@ -2,6 +2,11 @@
 
 Ribbon shows the section for a new version when it offers you the update.
 
+## 3.18
+
+- Outlined buttons, like Edit, Cancel, Delete and Rewrite, and the message box no longer show thin stray lines at their ends.
+- A session type that blocks distracting apps and sites now says "Blocks distracting apps and sites" instead of "no distractions".
+
 ## 3.17
 
 - **The ruthless orb is brutal now.** It roasts you with your whole day: the first thing you opened, your minutes on each app and site, your productivity score, your longest distraction, anything distracting before 6am, earlier sessions and how many nudges they took, and the reasons you gave for emergency passes. It insults you, swears, and gets nastier every time you ignore it, until it's screaming by the fifth nudge. Waving it off counts double. It never touches self-harm, slurs or threats.
