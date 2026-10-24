@@ -479,7 +479,7 @@ struct SessionEditor: View {
                                 Button { pickingApps = true } label: {
                                     Label("Add app", systemImage: "plus").font(.system(size: 12.5))
                                         .padding(.horizontal, 10).frame(height: 26)
-                                        .overlay(Capsule().strokeBorder(Theme.hairline))
+                                        .overlay(Capsule(style: .circular).strokeBorder(Theme.hairline))
                                         .contentShape(Capsule())
                                 }
                                 .buttonStyle(.plain)
@@ -504,7 +504,7 @@ struct SessionEditor: View {
                                         .onSubmit(addSite)
                                 }
                                 .padding(.horizontal, 10).frame(height: 26)
-                                .overlay(Capsule().strokeBorder(Theme.hairline))
+                                .overlay(Capsule(style: .circular).strokeBorder(Theme.hairline))
                             }
                         }
                     }

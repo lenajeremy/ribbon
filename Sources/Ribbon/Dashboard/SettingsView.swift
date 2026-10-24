@@ -122,7 +122,7 @@ struct SettingsView: View {
                         Button("Until tomorrow") { pause(until: Calendar.current.startOfDay(for: Date()).addingTimeInterval(30 * 3600)) }
                     } label: {
                         Text("Pause").font(.system(size: 13, weight: .medium)).padding(.horizontal, 14).frame(height: 30)
-                            .overlay(Capsule().strokeBorder(Theme.hairline))
+                            .overlay(Capsule(style: .circular).strokeBorder(Theme.hairline))
                     }
                     .menuStyle(.button).buttonStyle(.plain).menuIndicator(.hidden).fixedSize()
                 }

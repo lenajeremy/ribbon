@@ -196,7 +196,7 @@ struct Chip: View {
             .padding(.horizontal, 13)
             .padding(.vertical, 8)
             .background(selected ? Theme.ink : Theme.page, in: Capsule())
-            .overlay(Capsule().strokeBorder(selected ? Color.clear : Theme.hairline))
+            .overlay(Capsule(style: .circular).strokeBorder(selected ? Color.clear : Theme.hairline))
             .contentShape(Capsule())
         }
         .buttonStyle(.plain)
@@ -215,7 +215,7 @@ struct PillButtonStyle: ButtonStyle {
             .padding(.horizontal, 14)
             .frame(height: 30)
             .background(primary ? Theme.ink : Theme.page, in: Capsule())
-            .overlay(Capsule().strokeBorder(primary ? Color.clear : destructive ? Theme.distracting.opacity(0.6) : Theme.hairline))
+            .overlay(Capsule(style: .circular).strokeBorder(primary ? Color.clear : destructive ? Theme.distracting.opacity(0.6) : Theme.hairline))
             .opacity(configuration.isPressed ? 0.7 : 1)
             .contentShape(Capsule())
     }
@@ -253,8 +253,8 @@ struct Composer: View {
         .padding(.leading, 18)
         .padding(.trailing, 8)
         .padding(.vertical, 7)
-        .background(Theme.composer, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 24, style: .continuous).strokeBorder(Theme.composerBorder))
+        .background(Theme.composer, in: RoundedRectangle(cornerRadius: 24, style: .circular))
+        .overlay(RoundedRectangle(cornerRadius: 24, style: .circular).strokeBorder(Theme.composerBorder))
         .shadow(color: Theme.composerShadow, radius: 14, y: 4)
     }
 }
