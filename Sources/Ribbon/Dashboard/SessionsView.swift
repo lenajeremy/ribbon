@@ -121,8 +121,11 @@ private struct ProfileRow: View {
         }
         if profile.appMode == .allowOnly { parts.append("\(profile.apps.count) apps allowed") }
         if profile.appMode == .block { parts.append("\(profile.apps.count) apps blocked") }
-        if profile.blockDistracting && (profile.appMode != .allowOnly || profile.siteMode != .allowOnly) { parts.append("no distractions") }
-        return parts.isEmpty ? "No limits." : parts.joined(separator: "; ") + "."
+        if profile.blockDistracting && (profile.appMode != .allowOnly || profile.siteMode != .allowOnly) {
+            parts.append("blocks distracting apps and sites")
+        }
+        let text = parts.joined(separator: "; ")
+        return text.isEmpty ? "No limits." : text.prefix(1).uppercased() + text.dropFirst() + "."
     }
 
     private func list(_ sites: [String]) -> String {

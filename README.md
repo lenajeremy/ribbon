@@ -4,7 +4,7 @@ The AI time tracker for Mac. Ribbon tracks the apps and websites you use, shows 
 
 **Website:** https://ribbon-lake.vercel.app
 
-![Ribbon's Today view](docs/screenshot.png)
+![Ribbon's Today view](docs/shots/today.png)
 
 ## What it does
 

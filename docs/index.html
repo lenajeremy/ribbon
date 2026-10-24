@@ -10,249 +10,488 @@
 <style>
   :root {
     --page: #ffffff;
-    --band: #f5f5f7;
-    --ink: #0d0d0d;
-    --ink-2: #6e6e73;
-    --line: #e5e5e5;
+    --ink: #111111;
+    --ink-2: #5f5f64;
+    --ink-3: #8a8a8f;
+    --panel: #f4f4f5;
     --card: #ffffff;
-    --button: #0d0d0d;
+    --line: #e6e6e8;
+    --key: #ffffff;
+    --button: #161616;
     --button-ink: #ffffff;
-    --window: #ffffff; --window-bar: #f6f6f6;
-    --fill: #f5f5f7; --green: #128a3a;
-    --blue: #2a78d6; --orange: #eb6834; --aqua: #1baf7a; --yellow: #eda100; --violet: #4a3aa7; --magenta: #e87ba4;
+    --footer: #161616;
+    --footer-ink: #f2f2f2;
+    --footer-ink-2: #a3a3a8;
+    --sky-1: #f4f2ff; --sky-2: #c9cdfb; --sky-3: #7d8cf2; --sky-4: #3346c9; --sky-5: #17207a;
+    --glow: #e8e3ff;
+    --blue: #2a6fdb;
   }
   @media (prefers-color-scheme: dark) {
     :root {
-      --page: #121212; --band: #1c1c1e; --ink: #ececec; --ink-2: #9b9b9f; --line: #2e2e30; --card: #232325;
-      --button: #ececec; --button-ink: #121212;
-      --window: #212121; --window-bar: #2a2a2a;
-      --fill: #313134; --green: #2a9d4f;
-      --blue: #3987e5; --orange: #d95926; --aqua: #199e70; --yellow: #c98500; --violet: #9085e9; --magenta: #d55181;
+      --page: #0d0d0f;
+      --ink: #f2f2f3;
+      --ink-2: #a5a5ab;
+      --ink-3: #7c7c82;
+      --panel: #19191c;
+      --card: #222226;
+      --line: #2c2c30;
+      --key: #222226;
+      --button: #f2f2f3;
+      --button-ink: #111111;
+      --footer: #000000;
+      --footer-ink: #f2f2f3;
+      --footer-ink-2: #8e8e93;
+      --sky-1: #0d0d0f; --sky-2: #1b1f4d; --sky-3: #2c3aa8; --sky-4: #2a3bb8; --sky-5: #0b1052;
+      --glow: #3b3f8f;
+      --blue: #5b93f0;
     }
   }
   * { box-sizing: border-box; }
-  html { -webkit-text-size-adjust: 100%; }
+  html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
   body {
     margin: 0; background: var(--page); color: var(--ink);
-    font: 17px/1.5 ui-sans-serif, -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Helvetica, Arial, sans-serif;
+    font: 17px/1.5 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
     -webkit-font-smoothing: antialiased;
   }
   a { color: inherit; }
-  a:focus-visible, .button:focus-visible { outline: 2px solid var(--blue); outline-offset: 3px; border-radius: 999px; }
+  :focus-visible { outline: 2px solid var(--blue); outline-offset: 3px; border-radius: 8px; }
+  h1, h2, h3 { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif; }
+  .wrap { max-width: 1072px; margin: 0 auto; padding: 0 24px; }
 
-  nav {
-    position: sticky; top: 0; z-index: 2;
-    display: flex; align-items: center; justify-content: space-between;
-    max-width: 1080px; margin: 0 auto; padding: 14px 24px;
-    background: color-mix(in srgb, var(--page) 82%, transparent);
-    backdrop-filter: saturate(180%) blur(20px); -webkit-backdrop-filter: saturate(180%) blur(20px);
+  /* The desktop: a wallpaper with icons that double as the menu, and the orb in the corner. */
+  .desk { position: relative; overflow: hidden; min-height: 860px; padding: 0 24px 72px; text-align: center; isolation: isolate; }
+  .wallpaper { position: absolute; inset: 0; z-index: -1; pointer-events: none; }
+  .wallpaper svg { position: absolute; left: 0; bottom: 0; width: 100%; height: 76%; }
+  .brand {
+    position: absolute; top: 24px; left: 28px; z-index: 2;
+    display: flex; align-items: center; gap: 12px; font-weight: 700; font-size: 18px; letter-spacing: -0.01em; text-decoration: none;
   }
-  .brand { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 17px; text-decoration: none; letter-spacing: -0.01em; }
-  .brand svg { width: 26px; height: 26px; }
-  .nav-link { display: inline-flex; align-items: center; gap: 7px; font-size: 14px; text-decoration: none; color: var(--ink-2); }
-  .nav-link:hover { color: var(--ink); }
-  .nav-link svg { width: 17px; height: 17px; }
-
-  .hero { text-align: center; padding: 72px 24px 0; }
-  .pill {
-    display: inline-flex; align-items: center; gap: 10px;
-    padding: 7px 14px; border: 1px solid var(--line); border-radius: 999px;
-    font-size: 13.5px; color: var(--ink-2);
+  .brand svg { width: 36px; height: 36px; }
+  .desk h1 {
+    margin: 0 auto; padding-top: 196px; max-width: 11.5em; text-wrap: balance;
+    font-size: clamp(44px, 6.4vw, 70px); line-height: 1.04; font-weight: 700; letter-spacing: -0.035em;
   }
-  h1 {
-    margin: 24px auto 0; max-width: 12em; text-wrap: balance;
-    font-size: clamp(44px, 7vw, 76px); line-height: 1.05; font-weight: 600; letter-spacing: -0.035em;
+  .desk h1 em { font-style: italic; font-weight: 700; }
+  .keys { margin-top: 26px; display: flex; justify-content: center; gap: 6px; flex-wrap: wrap; }
+  .key {
+    display: inline-flex; align-items: center; height: 30px; padding: 0 10px; border-radius: 7px;
+    background: var(--key); border: 1px solid var(--line); box-shadow: 0 1px 0 var(--line);
+    font: 500 13px/1 ui-monospace, "SF Mono", Menlo, monospace; color: var(--ink-2);
   }
-  .lede { margin: 24px auto 0; max-width: 31em; text-wrap: balance; font-size: clamp(18px, 2.1vw, 21px); line-height: 1.45; color: var(--ink-2); letter-spacing: -0.01em; }
-  .actions { margin-top: 36px; display: flex; flex-wrap: wrap; gap: 14px 18px; justify-content: center; align-items: center; }
+  .lede { margin: 18px auto 0; max-width: 33em; text-wrap: balance; font-size: 17px; line-height: 1.5; color: var(--ink-2); }
+  .cta { margin-top: 250px; display: flex; flex-direction: column; align-items: center; gap: 14px; }
   .button {
-    display: inline-flex; align-items: center; gap: 9px;
-    height: 46px; padding: 0 22px; border-radius: 999px;
-    background: var(--button); color: var(--button-ink); text-decoration: none; font-size: 15.5px; font-weight: 500;
-    transition: opacity .15s ease;
+    display: inline-flex; align-items: center; justify-content: center; gap: 9px;
+    height: 48px; padding: 0 24px; border-radius: 999px;
+    background: var(--button); color: var(--button-ink); text-decoration: none; font-size: 16px; font-weight: 600;
+    box-shadow: 0 0 0 1px rgba(255,255,255,.18) inset, 0 10px 30px -8px rgba(10,16,80,.55);
+    transition: transform .15s ease, opacity .15s ease;
   }
-  .button:hover { opacity: .85; }
-  .button svg { width: 18px; height: 18px; }
-  .note { margin: 20px 0 0; font-size: 14px; color: var(--ink-2); }
-  .button.secondary { background: transparent; color: var(--ink); box-shadow: inset 0 0 0 1px var(--line); }
+  .button:hover { transform: translateY(-1px); opacity: .92; }
+  .button svg { width: 17px; height: 17px; }
+  .cta small { font-size: 13.5px; color: rgba(255,255,255,.78); text-shadow: 0 1px 2px rgba(0,0,0,.25); }
 
-  .shot { max-width: 1080px; margin: 64px auto 0; padding: 0 24px; }
+  .icon {
+    position: absolute; z-index: 1; width: 104px; display: flex; flex-direction: column; align-items: center; gap: 7px;
+    text-decoration: none; color: #fff; font-size: 12.5px; font-weight: 600;
+    text-shadow: 0 1px 3px rgba(0,0,0,.55); border-radius: 10px; padding: 6px 4px;
+  }
+  .icon:hover span { background: rgba(0,0,0,.28); }
+  .icon span { padding: 1px 7px; border-radius: 5px; }
+  .icon svg { width: 64px; height: 64px; filter: drop-shadow(0 6px 10px rgba(0,0,0,.22)); }
+  .icon.features { left: 7%; top: 610px; }
+  .icon.faq { left: 18%; top: 500px; }
+  .icon.changelog { right: 21%; top: 610px; }
+  .icon.github { right: 8%; top: 470px; }
+
+  .orb-hud { position: absolute; right: 28px; bottom: 28px; z-index: 1; display: flex; align-items: center; gap: 14px; text-align: left; }
+  .bubble {
+    max-width: 300px; padding: 11px 15px; border-radius: 16px;
+    background: rgba(20,20,24,.82); color: #fff; font-size: 13.5px; line-height: 1.38; font-weight: 500;
+    backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+    box-shadow: 0 0 0 1px rgba(255,255,255,.12) inset, 0 14px 34px -10px rgba(0,0,0,.5);
+  }
+  .bubble b { display: block; margin-bottom: 3px; font-size: 11.5px; font-weight: 600; color: #ffb35c; letter-spacing: .01em; }
+  .orb {
+    flex: none; position: relative; width: 58px; height: 58px; border-radius: 50%; overflow: hidden;
+    background: radial-gradient(circle at 38% 32%, #ffa21f 0%, #ff2d55 46%, #8e2de2 100%);
+    box-shadow: 0 0 0 3px rgba(255,255,255,.85), 0 10px 30px -4px rgba(255,45,85,.6), 0 0 60px rgba(255,90,54,.45);
+    animation: breathe 3.2s ease-in-out infinite;
+  }
+  .orb::before { content: ""; position: absolute; inset: -20%; background: conic-gradient(from 40deg, #ff2d55, #8e2de2, #ffa21f, #ff2d55); filter: blur(9px); opacity: .7; mix-blend-mode: soft-light; }
+  .orb::after { content: ""; position: absolute; left: 22%; top: 8%; width: 55%; height: 30%; border-radius: 50%; background: linear-gradient(rgba(255,255,255,.65), rgba(255,255,255,0)); }
+  @keyframes breathe { 50% { transform: scale(1.06); } }
+  @media (prefers-reduced-motion: reduce) { .orb { animation: none; } html { scroll-behavior: auto; } }
+
+  /* Sections */
+  section { padding: 120px 0 0; }
+  .head { text-align: center; }
+  .head h2 { margin: 0; font-size: clamp(30px, 4vw, 42px); line-height: 1.1; font-weight: 700; letter-spacing: -0.03em; text-wrap: balance; }
+  .head p { margin: 12px auto 0; max-width: 34em; color: var(--ink-2); text-wrap: balance; }
+
+  /* A strip of Ribbon's screens, each a window on its own wallpaper. */
+  .strip {
+    margin-top: 56px; display: flex; gap: 28px; overflow-x: auto; scroll-snap-type: x mandatory;
+    padding: 4px max(24px, calc((100vw - 1072px) / 2 + 24px)) 8px; scroll-padding: 0 max(24px, calc((100vw - 1072px) / 2 + 24px));
+    scrollbar-width: none;
+  }
+  .strip::-webkit-scrollbar { display: none; }
+  .screen { flex: none; width: min(560px, 84vw); scroll-snap-align: start; }
+  .scene {
+    position: relative; aspect-ratio: 16 / 10.5; border-radius: 22px; overflow: hidden;
+    box-shadow: 0 0 0 1px rgba(0,0,0,.06), 0 18px 40px -22px rgba(0,0,0,.45);
+  }
+  .scene.w1 { background: radial-gradient(120% 90% at 0% 0%, #ff8fd1 0%, transparent 55%), radial-gradient(100% 100% at 100% 100%, #5a3bf0 0%, transparent 60%), linear-gradient(135deg, #f15bb5, #7b2ff7 60%, #2d1b9a); }
+  .scene.w2 { background: radial-gradient(110% 90% at 100% 0%, #ffd36b 0%, transparent 55%), radial-gradient(100% 100% at 0% 100%, #ff4d4d 0%, transparent 60%), linear-gradient(135deg, #ff9f43, #ff5e62 55%, #c2185b); }
+  .scene.w3 { background: radial-gradient(110% 90% at 0% 0%, #8ff5d0 0%, transparent 55%), radial-gradient(100% 100% at 100% 100%, #1565c0 0%, transparent 60%), linear-gradient(135deg, #1de9b6, #00acc1 55%, #283593); }
+  .scene.w4 { background: radial-gradient(110% 90% at 100% 0%, #c6b8ff 0%, transparent 55%), radial-gradient(100% 100% at 0% 100%, #0d47a1 0%, transparent 60%), linear-gradient(135deg, #8c9eff, #3d5afe 55%, #1a237e); }
+  .scene.w5 { background: radial-gradient(110% 90% at 0% 0%, #ffe0a3 0%, transparent 55%), radial-gradient(100% 100% at 100% 100%, #2e7d32 0%, transparent 60%), linear-gradient(135deg, #d4e157, #43a047 55%, #1b5e20); }
   .window {
-    border-radius: 14px; overflow: hidden; background: var(--window);
-    border: 1px solid var(--line);
-    box-shadow: 0 30px 80px -20px rgba(0,0,0,.22), 0 8px 24px -8px rgba(0,0,0,.10);
+    position: absolute; left: 9%; top: 13%; width: 104%; border-radius: 11px; overflow: hidden; background: #fff;
+    box-shadow: 0 0 0 1px rgba(0,0,0,.12), 0 24px 50px -12px rgba(0,0,0,.45);
   }
-  .window .bar { height: 34px; display: flex; align-items: center; gap: 8px; padding: 0 14px; background: var(--window-bar); border-bottom: 1px solid var(--line); }
-  .window .bar i { width: 12px; height: 12px; border-radius: 50%; display: block; }
+  .window .bar { height: 26px; display: flex; align-items: center; gap: 7px; padding: 0 11px; background: #f3f3f3; border-bottom: 1px solid #e3e3e3; }
+  .window .bar i { width: 10px; height: 10px; border-radius: 50%; }
+  .window .bar i:nth-child(1) { background: #ff5f57; } .window .bar i:nth-child(2) { background: #febc2e; } .window .bar i:nth-child(3) { background: #28c840; }
   .window img { display: block; width: 100%; height: auto; }
+  .window.narrow { left: 18%; width: 64%; }
+  .screen h3 { margin: 20px 0 0; font-size: 17px; font-weight: 650; letter-spacing: -0.01em; }
+  .screen p { margin: 4px 0 0; color: var(--ink-2); font-size: 15.5px; line-height: 1.45; }
+  .pager { margin: 30px auto 0; display: flex; justify-content: center; gap: 6px; padding: 9px 12px; width: max-content; border-radius: 999px; background: var(--panel); }
+  .pager button { width: 22px; height: 7px; border: 0; padding: 0; border-radius: 99px; background: var(--line); cursor: pointer; transition: width .2s ease, background .2s ease; }
+  .pager button[aria-current="true"] { width: 44px; background: var(--ink); }
 
-  .features { background: var(--band); margin-top: 96px; padding: 96px 24px 104px; }
-  .features h2.head { max-width: 1080px; margin: 0 auto 40px; font-size: clamp(32px, 4.6vw, 48px); font-weight: 600; letter-spacing: -0.03em; line-height: 1.1; }
-  .bento { max-width: 1080px; margin: 0 auto; display: grid; grid-template-columns: repeat(12, 1fr); gap: 20px; }
-  .tile { grid-column: span 6; display: flex; flex-direction: column; gap: 44px; background: var(--card); border-radius: 28px; padding: 40px 40px 44px; overflow: hidden; }
-  .tile.wide { grid-column: span 7; }
-  .tile.narrow { grid-column: span 5; }
-  .tile > p { margin: 0; max-width: 24em; font-size: clamp(19px, 1.8vw, 21px); line-height: 1.38; font-weight: 600; letter-spacing: -0.016em; color: var(--ink-2); }
-  .tile > p strong { color: var(--ink); font-weight: 600; }
-  .viz { margin-top: auto; font-size: 15.5px; }
+  /* Light gray panels, as in the rest of the page. */
+  .panel { background: var(--panel); border-radius: 24px; }
+  .apps { display: grid; grid-template-columns: 1fr 1fr; align-items: center; gap: 40px; padding: 64px; }
+  .apps h2, .free h2 { margin: 0; font-size: clamp(26px, 3vw, 32px); line-height: 1.15; font-weight: 700; letter-spacing: -0.025em; }
+  .apps p, .free p { margin: 14px 0 0; color: var(--ink-2); max-width: 26em; }
+  .grid { display: grid; grid-template-columns: repeat(5, 64px); gap: 24px 28px; justify-content: end; }
+  .grid img { width: 64px; height: 64px; filter: drop-shadow(0 3px 6px rgba(0,0,0,.12)); }
 
-  .stats { display: flex; gap: 48px; }
-  .stats b { display: block; font-size: 44px; line-height: 1; font-weight: 600; letter-spacing: -0.035em; font-variant-numeric: tabular-nums; }
-  .stats span { display: block; margin-top: 8px; font-size: 14px; color: var(--ink-2); }
-  .ribbon { display: flex; gap: 2px; height: 40px; margin-top: 30px; border-radius: 10px; overflow: hidden; background: var(--fill); }
-  .ribbon i { display: block; min-width: 0; }
-  .axis { display: flex; justify-content: space-between; margin-top: 10px; font-size: 12.5px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+  .orbs { margin-top: 48px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .quote { display: flex; flex-direction: column; justify-content: space-between; gap: 28px; padding: 28px; border-radius: 16px; background: var(--panel); }
+  .quote blockquote { margin: 0; font-size: 18px; line-height: 1.45; }
+  .who { display: flex; align-items: center; gap: 14px; }
+  .who .orb { width: 40px; height: 40px; animation: none; box-shadow: 0 0 0 2px rgba(255,255,255,.9), 0 6px 18px -4px rgba(255,45,85,.5); }
+  .who .orb.calm { background: radial-gradient(circle at 38% 32%, #ffc46b 0%, #ff5a36 46%, #e8235f 100%); }
+  .who b { display: block; font-size: 15px; }
+  .who span { font-size: 14px; color: var(--ink-2); }
+  .orbs-note { margin: 18px auto 0; text-align: center; color: var(--ink-2); font-size: 15px; max-width: 40em; }
 
-  .sorted { list-style: none; margin: 0; padding: 0; }
-  .sorted li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 11px 0; border-top: 1px solid var(--line); }
-  .sorted li:first-child { border-top: 0; padding-top: 0; }
-  .sorted li:last-child { padding-bottom: 0; }
-  .app { display: flex; align-items: center; gap: 12px; font-weight: 500; }
-  .glyph { flex: none; width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; background: var(--fill); color: var(--ink-2); }
-  .glyph img { width: 18px; height: 18px; }
-  .logo { flex: none; width: 30px; height: 30px; }
-  .tag { display: inline-flex; align-items: center; gap: 7px; padding: 5px 12px; border-radius: 999px; background: var(--fill); font-size: 13.5px; white-space: nowrap; }
-  .tag i { width: 8px; height: 8px; border-radius: 2.5px; }
+  .free { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 8px; }
+  .free .left { padding: 48px 48px 44px; }
+  .free .left .button { margin-top: 30px; box-shadow: none; }
+  .free .left a.text { display: inline-block; margin-top: 16px; font-size: 14.5px; color: var(--ink-2); }
+  .free .right { background: var(--card); border-radius: 18px; padding: 44px 40px; }
+  .price { display: flex; align-items: flex-start; gap: 4px; }
+  .price sup { font-size: 22px; font-weight: 600; color: var(--ink-2); margin-top: 10px; }
+  .price b { font-size: 76px; line-height: 1; font-weight: 700; letter-spacing: -0.04em; }
+  .price span { margin: 14px 0 0 10px; color: var(--ink-2); }
+  .checks { list-style: none; margin: 26px 0 0; padding: 0; display: grid; gap: 12px; font-size: 15.5px; }
+  .checks li { display: flex; gap: 12px; align-items: baseline; }
+  .checks li::before { content: "✓"; color: var(--ink-3); }
 
-  .focus { display: flex; align-items: center; gap: 32px; }
-  .ring { position: relative; flex: none; width: 136px; height: 136px; }
-  .ring svg { width: 100%; height: 100%; transform: rotate(-90deg); fill: none; stroke-width: 10; }
-  .ring .track { stroke: var(--fill); }
-  .ring .done { stroke: var(--aqua); stroke-linecap: round; }
-  .clock { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; }
-  .clock b { font-size: 26px; font-weight: 600; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; line-height: 1.1; }
-  .clock span { font-size: 12.5px; color: var(--ink-2); }
-  .rules { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
-  .rules li { display: flex; align-items: center; gap: 10px; }
-  .rules svg { flex: none; width: 20px; height: 20px; }
-  .rules .off { color: var(--ink-2); }
+  .faq { max-width: 944px; }
+  .faq h2 { margin: 0 0 32px; font-size: clamp(30px, 4vw, 42px); line-height: 1.1; font-weight: 700; letter-spacing: -0.03em; }
+  details { border-top: 1px solid var(--line); }
+  details:last-of-type { border-bottom: 1px solid var(--line); }
+  summary { display: flex; justify-content: space-between; align-items: center; gap: 24px; padding: 22px 0; cursor: pointer; list-style: none; font-size: 17px; }
+  summary::-webkit-details-marker { display: none; }
+  summary::after { content: ""; flex: none; width: 14px; height: 14px; background: linear-gradient(currentColor, currentColor) center / 14px 1.5px no-repeat, linear-gradient(currentColor, currentColor) center / 1.5px 14px no-repeat; transition: transform .2s ease; }
+  details[open] summary::after { transform: rotate(45deg); }
+  details p { margin: -6px 0 24px; max-width: 46em; color: var(--ink-2); }
+  code { font: 14px ui-monospace, "SF Mono", Menlo, monospace; padding: 2px 7px; border-radius: 6px; background: var(--panel); white-space: nowrap; }
 
-  .chat { display: flex; flex-direction: column; gap: 16px; }
-  .ask { align-self: flex-end; max-width: 80%; padding: 10px 16px; border-radius: 20px; background: var(--fill); }
-  .answer { max-width: 32em; line-height: 1.5; }
-  .answer b { font-weight: 600; }
-  .composer { display: flex; align-items: center; justify-content: space-between; height: 50px; margin-top: 8px; padding: 0 8px 0 20px; border: 1px solid var(--line); border-radius: 999px; color: var(--ink-2); box-shadow: 0 4px 16px -6px rgba(0,0,0,.08); }
-  .send { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; background: var(--ink); color: var(--page); }
-  .send svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+  footer { margin-top: 140px; background: var(--footer); color: var(--footer-ink); padding: 72px 0 48px; }
+  .foot { display: grid; grid-template-columns: 1.4fr repeat(3, auto); gap: 40px 72px; }
+  .foot h4 { margin: 0 0 18px; font-size: 15px; font-weight: 600; }
+  .foot p { margin: 0; max-width: 24em; font-size: 15px; color: var(--footer-ink-2); }
+  .foot ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; font-size: 15px; }
+  .foot a { color: var(--footer-ink-2); text-decoration: none; }
+  .foot a:hover { color: var(--footer-ink); }
+  .brew { margin-top: 22px; display: inline-flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 10px; border: 1px solid #2f2f33; font: 13.5px ui-monospace, "SF Mono", Menlo, monospace; color: var(--footer-ink); }
+  .brew span { color: var(--footer-ink-2); }
+  .legal { margin-top: 72px; display: flex; justify-content: space-between; align-items: center; font-size: 14px; color: var(--footer-ink-2); }
+  .legal a { display: grid; place-items: center; color: var(--footer-ink); }
+  .legal svg { width: 22px; height: 22px; }
 
-  .closing { text-align: center; padding: 96px 24px 40px; }
-  .closing h2 { margin: 0; font-size: clamp(32px, 4.6vw, 48px); font-weight: 600; letter-spacing: -0.03em; line-height: 1.1; }
-  .closing p { margin: 14px auto 0; color: var(--ink-2); font-size: 18px; max-width: 37em; }
-  footer { text-align: center; padding: 48px 24px 56px; font-size: 13px; color: var(--ink-2); }
-
-  @media (max-width: 900px) {
-    .tile, .tile.wide, .tile.narrow { grid-column: 1 / -1; }
+  @media (max-width: 1000px) {
+    .icon.faq, .icon.changelog { display: none; }
+    .apps { grid-template-columns: 1fr; padding: 48px 40px; }
+    .grid { justify-content: start; }
+    .foot { grid-template-columns: 1fr 1fr 1fr; }
+    .foot > div:first-child { grid-column: 1 / -1; }
   }
-  @media (max-width: 760px) {
-    .hero { padding-top: 48px; }
-    .shot { margin-top: 44px; }
-    .features { margin-top: 64px; padding: 64px 16px 72px; }
-    .features h2.head { margin-bottom: 28px; }
-    .tile { padding: 30px 26px 32px; border-radius: 24px; gap: 36px; }
-    .stats { gap: 32px; }
-    .stats b { font-size: 36px; }
+  @media (max-width: 720px) {
+    .desk { min-height: 0; padding-bottom: 40px; }
+    .desk h1 { padding-top: 118px; }
+    .wallpaper svg { height: 62%; }
+    .icon, .swoosh { display: none; }
+    .cta { margin-top: 150px; }
+    .orb-hud { position: static; margin: 36px auto 0; justify-content: center; max-width: 360px; }
+    .bubble { max-width: none; }
+    section { padding-top: 88px; }
+    .orbs, .free { grid-template-columns: 1fr; }
+    .free .left { padding: 36px 28px 32px; }
+    .free .right { padding: 36px 28px; }
+    .apps { padding: 36px 24px; }
+    .grid { grid-template-columns: repeat(5, 1fr); gap: 16px; }
+    .grid img { width: 100%; height: auto; max-width: 56px; }
+    .wrap { padding: 0 16px; }
+    .strip { padding-inline: 16px; scroll-padding: 0 16px; gap: 16px; }
+    .foot { grid-template-columns: 1fr 1fr; }
+    .legal { margin-top: 48px; }
   }
 </style>
 </head>
 <body>
-  <nav>
+  <header class="desk">
+    <div class="wallpaper" aria-hidden="true">
+      <svg viewBox="0 0 1440 700" preserveAspectRatio="xMidYMax slice">
+        <defs>
+          <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" style="stop-color: var(--sky-1); stop-opacity: 0"/>
+            <stop offset=".28" style="stop-color: var(--sky-2)"/>
+            <stop offset=".62" style="stop-color: var(--sky-3)"/>
+            <stop offset=".86" style="stop-color: var(--sky-4)"/>
+            <stop offset="1" style="stop-color: var(--sky-5)"/>
+          </linearGradient>
+          <radialGradient id="glow-a" cx=".5" cy=".5" r=".5"><stop offset="0" style="stop-color: var(--glow); stop-opacity: .9"/><stop offset="1" style="stop-color: var(--glow); stop-opacity: 0"/></radialGradient>
+          <radialGradient id="glow-b" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#5a6cff" stop-opacity=".75"/><stop offset="1" stop-color="#5a6cff" stop-opacity="0"/></radialGradient>
+          <radialGradient id="glow-c" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#ff7a59" stop-opacity=".45"/><stop offset="1" stop-color="#ff7a59" stop-opacity="0"/></radialGradient>
+          <linearGradient id="sweep" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff" stop-opacity=".95"/><stop offset=".6" stop-color="#fff" stop-opacity=".6"/><stop offset="1" stop-color="#fff" stop-opacity=".15"/></linearGradient>
+          <filter id="soft" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="28"/></filter>
+        </defs>
+        <rect width="1440" height="700" fill="url(#sky)"/>
+        <g filter="url(#soft)">
+          <ellipse cx="300" cy="300" rx="420" ry="190" fill="url(#glow-a)"/>
+          <ellipse cx="1150" cy="420" rx="460" ry="260" fill="url(#glow-b)"/>
+          <ellipse cx="1300" cy="640" rx="320" ry="160" fill="url(#glow-c)"/>
+          <ellipse cx="720" cy="230" rx="520" ry="120" fill="url(#glow-a)" opacity=".7"/>
+        </g>
+        <path class="swoosh" d="M-40 720 C 240 620, 520 520, 760 490 S 1160 440, 1480 350 L 1480 296 C 1160 386, 960 410, 760 436 S 240 552, -40 648 Z" fill="#fff" opacity=".14"/>
+        <path class="swoosh" d="M-40 648 C 240 552, 520 466, 760 436 S 1160 386, 1480 296" fill="none" stroke="url(#sweep)" stroke-width="3"/>
+        <path class="swoosh" d="M-40 648 C 240 552, 520 466, 760 436 S 1160 386, 1480 296" fill="none" stroke="#fff" stroke-opacity=".35" stroke-width="14" filter="url(#soft)"/>
+      </svg>
+    </div>
+
     <a class="brand" href="#">
-      <svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="14" fill="var(--ink)"/><path d="M23.5 14h9a9 9 0 0 1 0 18l9 18h-18z" fill="var(--page)"/></svg>
+      <svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="15" style="fill: var(--ink)"/><path d="M23.5 14h9a9 9 0 0 1 0 18l9 18h-18z" style="fill: var(--page)"/></svg>
       Ribbon
     </a>
-    <a class="nav-link" href="https://github.com/lenajeremy/ribbon">
-      <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
-      GitHub
-    </a>
-  </nav>
 
-  <header class="hero">
-    <span class="pill">
-      Free and open source
-    </span>
-    <h1>The AI time tracker for Mac.</h1>
+    <h1>Know where your day <em>actually</em> goes</h1>
+    <div class="keys" aria-label="Free, open source, for Mac"><span class="key">Free</span><span class="key">Open source</span><span class="key">For Mac</span></div>
     <p class="lede">Ribbon tracks the apps and websites you use, shows how you spent your day, and blocks distractions while you work. Tracking happens entirely on your Mac, and your data is stored only there.</p>
-    <div class="actions">
+
+    <a class="icon features" href="#screens">
+      <svg viewBox="0 0 64 64" aria-hidden="true"><path d="M6 14a4 4 0 0 1 4-4h14l5 5h25a4 4 0 0 1 4 4v3H6z" fill="#3a8ef6"/><rect x="6" y="19" width="52" height="36" rx="4" fill="#5aa9ff"/><rect x="6" y="19" width="52" height="5" fill="#8cc4ff" opacity=".7"/><path d="M24 33h16M24 39h11" stroke="#2f7be6" stroke-width="3" stroke-linecap="round"/></svg>
+      <span>Features</span>
+    </a>
+    <a class="icon faq" href="#faq">
+      <svg viewBox="0 0 64 64" aria-hidden="true"><path d="M6 14a4 4 0 0 1 4-4h14l5 5h25a4 4 0 0 1 4 4v3H6z" fill="#3a8ef6"/><rect x="6" y="19" width="52" height="36" rx="4" fill="#5aa9ff"/><rect x="6" y="19" width="52" height="5" fill="#8cc4ff" opacity=".7"/><text x="32" y="45" text-anchor="middle" font-size="18" font-weight="700" fill="#2f7be6" font-family="-apple-system, Helvetica, sans-serif">?</text></svg>
+      <span>FAQ</span>
+    </a>
+    <a class="icon changelog" href="https://github.com/lenajeremy/ribbon/blob/main/CHANGELOG.md">
+      <svg viewBox="0 0 64 64" aria-hidden="true"><path d="M14 6h26l12 12v38a2 2 0 0 1-2 2H14a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z" fill="#fff"/><path d="M40 6v10a2 2 0 0 0 2 2h10z" fill="#d7d9de"/><path d="M19 26h26M19 32h26M19 38h20M19 44h24" stroke="#b9bcc4" stroke-width="2.4" stroke-linecap="round"/></svg>
+      <span>Changelog</span>
+    </a>
+    <a class="icon github" href="https://github.com/lenajeremy/ribbon">
+      <svg viewBox="0 0 64 64" aria-hidden="true"><path d="M6 14a4 4 0 0 1 4-4h14l5 5h25a4 4 0 0 1 4 4v3H6z" fill="#3a8ef6"/><rect x="6" y="19" width="52" height="36" rx="4" fill="#5aa9ff"/><rect x="6" y="19" width="52" height="5" fill="#8cc4ff" opacity=".7"/><path transform="translate(23 27) scale(1.12)" fill="#2f7be6" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+      <span>GitHub</span>
+    </a>
+
+    <div class="cta">
       <a class="button" href="https://github.com/lenajeremy/ribbon/releases/latest/download/Ribbon.dmg">
         <svg viewBox="0 0 17 20" fill="currentColor" aria-hidden="true"><path d="M14.1 10.6c0-2.6 2.1-3.8 2.2-3.9-1.2-1.8-3.1-2-3.7-2-1.6-.2-3.1.9-3.9.9-.8 0-2-.9-3.4-.9-1.7 0-3.3 1-4.2 2.6-1.8 3.1-.5 7.7 1.3 10.2.9 1.2 1.9 2.6 3.2 2.6 1.3-.1 1.8-.8 3.3-.8 1.6 0 2 .8 3.4.8 1.4 0 2.3-1.3 3.1-2.5 1-1.4 1.4-2.8 1.4-2.9-.1 0-2.7-1-2.7-4.1zM11.5 3c.7-.9 1.2-2 1-3.2-1 0-2.3.7-3 1.6-.7.8-1.2 2-1.1 3.1 1.2.1 2.3-.6 3.1-1.5z"/></svg>
         Download for Mac
       </a>
-      <a class="button secondary" href="https://github.com/lenajeremy/ribbon">
-        <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
-        View on GitHub
-      </a>
+      <small>macOS 14 or later, on Apple silicon and Intel Macs</small>
     </div>
-    <p class="note">Requires macOS 14 or later. Works on Apple silicon and Intel Macs.</p>
+
+    <div class="orb-hud" aria-label="The focus orb, nudging you back to work">
+      <div class="bubble"><b>Ship the onboarding flow · 18:24 left</b>Fourteen minutes on YouTube. The onboarding flow isn't going to ship itself.</div>
+      <div class="orb" aria-hidden="true"></div>
+    </div>
   </header>
 
-  <section class="shot" aria-label="Ribbon's Today view">
-    <div class="window">
-      <div class="bar" aria-hidden="true"><i style="background:#ff5f57"></i><i style="background:#febc2e"></i><i style="background:#28c840"></i></div>
-      <picture>
-        <source srcset="screenshot-dark.png" media="(prefers-color-scheme: dark)">
-        <img src="screenshot.png" alt="Ribbon's Today view: a headline written by AI, the day as a colored ribbon of activity, a short summary, and scores." width="2000" height="1450">
-      </picture>
+  <section id="screens" aria-labelledby="screens-head">
+    <div class="wrap head">
+      <h2 id="screens-head">Your whole day, on one ribbon</h2>
+      <p>Ribbon records every app and website you use, so you never have to start a timer. Then it helps you use the next hour better.</p>
+    </div>
+    <div class="strip" id="strip">
+      <article class="screen">
+        <div class="scene w1"><div class="window"><div class="bar" aria-hidden="true"><i></i><i></i><i></i></div><img src="shots/today.png" width="1600" height="1260" alt="Ribbon's Today view: the day as a colored ribbon of apps and websites, a summary written by AI, and scores."></div></div>
+        <h3>See where your day went</h3>
+        <p>Every app and website on one ribbon, sorted into categories, with a short summary written by AI.</p>
+      </article>
+      <article class="screen">
+        <div class="scene w2"><div class="window"><div class="bar" aria-hidden="true"><i></i><i></i><i></i></div><img src="shots/types.png" width="1600" height="820" alt="Ribbon's session types: Coding, Deep Work, Pomodoro and Writing, each with the apps and websites it allows or blocks." loading="lazy"></div></div>
+        <h3>Block what you don't need</h3>
+        <p>Each focus session decides which apps and websites you can open. Ribbon hides the rest until it ends.</p>
+      </article>
+      <article class="screen">
+        <div class="scene w3"><div class="window"><div class="bar" aria-hidden="true"><i></i><i></i><i></i></div><img src="shots/schedule.png" width="1600" height="962" alt="Ribbon's schedule: a Coding session on weekdays from 9:00 to 12:00, and a Writing session on Monday, Wednesday and Friday afternoons." loading="lazy"></div></div>
+        <h3>Focus on a schedule</h3>
+        <p>A session can start by itself, like 9:00 to 12:00 on weekdays. Its rules stay on until it ends, with one emergency pass a week.</p>
+      </article>
+      <article class="screen">
+        <div class="scene w4"><div class="window narrow"><div class="bar" aria-hidden="true"><i></i><i></i><i></i></div><img src="shots/review.png" width="838" height="771" alt="A session score of 92 out of 100: right on task, with points off for 3 minutes on Slack and 5 minutes away." loading="lazy"></div></div>
+        <h3>Get a score for every session</h3>
+        <p>When a session ends, Ribbon checks what you did against what you said you'd do, and tells you what cost you points.</p>
+      </article>
+      <article class="screen">
+        <div class="scene w5"><div class="window"><div class="bar" aria-hidden="true"><i></i><i></i><i></i></div><img src="shots/ask.png" width="1551" height="380" alt="Asking Ribbon “Where did my time go today?” and getting an answer from the day's activity." loading="lazy"></div></div>
+        <h3>Ask about your time</h3>
+        <p>Ask things like “Where did my time go today?” and get an answer from your own activity.</p>
+      </article>
+    </div>
+    <div class="pager" id="pager" role="group" aria-label="Screens"></div>
+  </section>
+
+  <section aria-labelledby="apps-head">
+    <div class="wrap">
+      <div class="panel apps">
+        <div>
+          <h2 id="apps-head">Works with the apps you use</h2>
+          <p>Ribbon tracks every app on your Mac. In Safari, Chrome, Arc, Brave, Edge and other Chromium browsers, it also sees which website you're on, so it can block sites too.</p>
+        </div>
+        <div class="grid" aria-hidden="true">
+          <img src="apps/google-chrome.png" alt="" width="64" height="64" loading="lazy"><img src="apps/safari.png" alt="" width="64" height="64" loading="lazy"><img src="apps/xcode.png" alt="" width="64" height="64" loading="lazy"><img src="apps/cursor.png" alt="" width="64" height="64" loading="lazy"><img src="apps/ghostty.png" alt="" width="64" height="64" loading="lazy">
+          <img src="apps/figma.png" alt="" width="64" height="64" loading="lazy"><img src="apps/slack.png" alt="" width="64" height="64" loading="lazy"><img src="apps/zoomus.png" alt="" width="64" height="64" loading="lazy"><img src="apps/terminal.png" alt="" width="64" height="64" loading="lazy"><img src="apps/linear.png" alt="" width="64" height="64" loading="lazy">
+          <img src="apps/discord.png" alt="" width="64" height="64" loading="lazy"><img src="apps/spotify.png" alt="" width="64" height="64" loading="lazy"><img src="apps/mail.png" alt="" width="64" height="64" loading="lazy"><img src="apps/messages.png" alt="" width="64" height="64" loading="lazy"><img src="apps/notes.png" alt="" width="64" height="64" loading="lazy">
+        </div>
+      </div>
     </div>
   </section>
 
-  <section class="features" aria-labelledby="features-head">
-    <h2 class="head" id="features-head">What Ribbon does.</h2>
-    <div class="bento">
-      <article class="tile wide">
-        <p><strong>Tracks your time automatically.</strong> Ribbon records every app and website you use, and for how long. You don't have to start or stop anything.</p>
-        <div class="viz" aria-hidden="true">
-          <div class="stats">
-            <div><b>6h 44m</b><span>Tracked today</span></div>
-            <div><b>81%</b><span>Productive</span></div>
-          </div>
-          <div class="ribbon"><i style="flex:12;background:var(--aqua)"></i><i style="flex:30;background:var(--orange)"></i><i style="flex:48;background:var(--blue)"></i><i style="flex:6"></i><i style="flex:30;background:var(--blue)"></i><i style="flex:12"></i><i style="flex:40;background:var(--violet)"></i><i style="flex:50"></i><i style="flex:14;background:var(--yellow)"></i><i style="flex:8;background:var(--green)"></i><i style="flex:70;background:var(--blue)"></i><i style="flex:10;background:var(--yellow)"></i><i style="flex:30;background:var(--blue)"></i><i style="flex:15"></i><i style="flex:15;background:var(--green)"></i><i style="flex:70;background:var(--blue)"></i><i style="flex:10;background:var(--yellow)"></i><i style="flex:70"></i></div>
-          <div class="axis"><span>9 AM</span><span>12 PM</span><span>3 PM</span><span>6 PM</span></div>
+  <section aria-labelledby="orb-head">
+    <div class="wrap">
+      <div class="head">
+        <h2 id="orb-head">A focus orb that talks back</h2>
+        <p>During a focus session, a small orb sits in the corner of your screen. Drift for more than a minute and it tells you, out loud. You choose how nice it is.</p>
+      </div>
+      <div class="orbs">
+        <figure class="quote" style="margin:0">
+          <blockquote>“That video looks fun, but your onboarding flow misses you. Back to it?”</blockquote>
+          <figcaption class="who"><span class="orb calm" aria-hidden="true"></span><span><b>Friendly</b><span>Playful, never mean. The default.</span></span></figcaption>
+        </figure>
+        <figure class="quote" style="margin:0">
+          <blockquote>“YouTube again. Fourteen minutes. You said you'd ship the onboarding flow today, not watch other people ship things.”</blockquote>
+          <figcaption class="who"><span class="orb" aria-hidden="true"></span><span><b>Ruthless</b><span>Uses your whole day against you, and gets harsher each time you ignore it.</span></span></figcaption>
+        </figure>
+      </div>
+      <p class="orbs-note">With a Gemini API key, the orb speaks in its own voice: a bone-dry English butler.</p>
+    </div>
+  </section>
+
+  <section aria-labelledby="free-head">
+    <div class="wrap">
+      <div class="panel free">
+        <div class="left">
+          <h2 id="free-head">Free and open source</h2>
+          <p>No account and no subscription. The code is on GitHub under the MIT license.</p>
+          <a class="button" href="https://github.com/lenajeremy/ribbon/releases/latest/download/Ribbon.dmg">Download for Mac</a><br>
+          <a class="text" href="https://github.com/lenajeremy/ribbon">View the source on GitHub</a>
         </div>
-      </article>
-      <article class="tile narrow">
-        <p><strong>Sorts your time into categories.</strong> AI puts each app and website into a category, like Code or Meetings. You can add your own categories too.</p>
-        <ul class="viz sorted" aria-hidden="true">
-          <li><span class="app"><img class="logo" src="logos/xcode.png" alt="" width="30" height="30">Xcode</span><span class="tag"><i style="background:var(--blue)"></i>Code</span></li>
-          <li><span class="app"><img class="logo" src="logos/figma.png" alt="" width="30" height="30">Figma</span><span class="tag"><i style="background:var(--orange)"></i>Design</span></li>
-          <li><span class="app"><img class="logo" src="logos/zoom.png" alt="" width="30" height="30">zoom.us</span><span class="tag"><i style="background:var(--violet)"></i>Meetings</span></li>
-          <li><span class="app"><span class="glyph"><img src="logos/youtube.png" alt="" width="18" height="18"></span>youtube.com</span><span class="tag"><i style="background:var(--magenta)"></i>Entertainment</span></li>
-        </ul>
-      </article>
-      <article class="tile narrow">
-        <p><strong>Blocks distractions while you focus.</strong> Start a focus session and choose the apps and websites you need. Ribbon blocks the rest until it ends.</p>
-        <div class="viz focus" aria-hidden="true">
-          <div class="ring">
-            <svg viewBox="0 0 120 120"><circle class="track" cx="60" cy="60" r="52"/><circle class="done" cx="60" cy="60" r="52" stroke-dasharray="326.7" stroke-dashoffset="88"/></svg>
-            <div class="clock"><b>18:24</b><span>Coding</span></div>
-          </div>
-          <ul class="rules">
-            <li><svg viewBox="0 0 20 20"><circle cx="10" cy="10" r="10" fill="var(--aqua)"/><path d="M6 10.2l2.6 2.6L14 7.4" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>Xcode</li>
-            <li><svg viewBox="0 0 20 20"><circle cx="10" cy="10" r="10" fill="var(--aqua)"/><path d="M6 10.2l2.6 2.6L14 7.4" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>localhost</li>
-            <li><svg viewBox="0 0 20 20"><circle cx="10" cy="10" r="10" fill="var(--aqua)"/><path d="M6 10.2l2.6 2.6L14 7.4" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>google.com</li>
-            <li class="off"><svg viewBox="0 0 20 20"><circle cx="10" cy="10" r="10" fill="var(--line)"/><path d="M7 7l6 6M13 7l-6 6" stroke="var(--ink-2)" stroke-width="1.9" stroke-linecap="round"/></svg>youtube.com</li>
+        <div class="right">
+          <div class="price"><sup>$</sup><b>0</b><span>forever</span></div>
+          <ul class="checks">
+            <li>Every feature included</li>
+            <li>Your activity is stored on your Mac</li>
+            <li>For the AI, use your ChatGPT plan or your own OpenAI key</li>
+            <li>New versions download by themselves</li>
           </ul>
         </div>
-      </article>
-      <article class="tile wide">
-        <p><strong>Answers questions about your time.</strong> Ask things like “How long was I on YouTube this week?” and Ribbon tells you.</p>
-        <div class="viz chat" aria-hidden="true">
-          <div class="ask">How did I spend this afternoon?</div>
-          <div class="answer">Mostly coding: <b>2h 41m</b> in Xcode and on github.com. You also spent <b>39m</b> in meetings on zoom.us.</div>
-          <div class="composer">Ask about today<span class="send"><svg viewBox="0 0 16 16"><path d="M8 13V3M3.5 7.5L8 3l4.5 4.5"/></svg></span></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="faq" aria-labelledby="faq-head">
+    <div class="wrap faq">
+      <h2 id="faq-head">Frequently asked questions</h2>
+      <details>
+        <summary>Is Ribbon free?</summary>
+        <p>Yes. Ribbon is free and open source under the MIT license. The AI features run on your ChatGPT plan (Plus or Pro) or your own OpenAI API key, so any AI costs are between you and OpenAI.</p>
+      </details>
+      <details>
+        <summary>What does the AI see?</summary>
+        <p>Ribbon stores your activity on your Mac. When the AI is on, Ribbon sends app names, website names, page titles and totals to OpenAI, plus screenshots during focus sessions that watch your screen. Screenshots are never saved. If you add a Gemini API key for the orb's voice, what the orb says aloud is sent to Google to be turned into speech.</p>
+      </details>
+      <details>
+        <summary>Does it work without the AI?</summary>
+        <p>Yes. Tracking, the timeline, focus sessions, blocking and session scores all work without it. The AI adds smarter sorting into categories, written summaries, answers to your questions, and the orb's screen checks.</p>
+      </details>
+      <details>
+        <summary>Which browsers does it work with?</summary>
+        <p>Ribbon sees which website you're on in Safari, Chrome, Arc, Brave, Edge and other Chromium browsers, so it can track and block sites there. In Firefox, it sees page titles only.</p>
+      </details>
+      <details>
+        <summary>Can I quit Ribbon during a scheduled session?</summary>
+        <p>No. A scheduled session can't be paused or quit, and its rules stay on through breaks. Your emergency pass, one a week, ends it early. If Ribbon is force-quit during a scheduled session, it reopens within a minute.</p>
+      </details>
+      <details>
+        <summary>Can I install it with Homebrew?</summary>
+        <p>Yes: <code>brew install --cask lenajeremy/tap/ribbon</code>. Ribbon needs macOS 14 or later, and works on Apple silicon and Intel Macs.</p>
+      </details>
+    </div>
+  </section>
+
+  <footer>
+    <div class="wrap">
+      <div class="foot">
+        <div>
+          <h4>Ribbon</h4>
+          <p>The AI time tracker for Mac. Free, open source, and your data stays on your Mac.</p>
+          <div class="brew"><span>$</span>brew install --cask lenajeremy/tap/ribbon</div>
         </div>
-      </article>
+        <div>
+          <h4>Product</h4>
+          <ul><li><a href="#screens">Features</a></li><li><a href="#faq">FAQ</a></li><li><a href="https://github.com/lenajeremy/ribbon/releases/latest/download/Ribbon.dmg">Download</a></li></ul>
+        </div>
+        <div>
+          <h4>Resources</h4>
+          <ul><li><a href="https://github.com/lenajeremy/ribbon/blob/main/CHANGELOG.md">Changelog</a></li><li><a href="https://github.com/lenajeremy/ribbon/releases">Releases</a></li><li><a href="https://github.com/lenajeremy/ribbon">Source code</a></li></ul>
+        </div>
+        <div>
+          <h4>Legal</h4>
+          <ul><li><a href="https://github.com/lenajeremy/ribbon/blob/main/LICENSE">MIT license</a></li></ul>
+        </div>
+      </div>
+      <div class="legal">
+        <span>© 2026 Ribbon</span>
+        <a href="https://github.com/lenajeremy/ribbon" aria-label="Ribbon on GitHub"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg></a>
+      </div>
     </div>
-  </section>
+  </footer>
 
-  <section class="closing">
-    <h2>Free, open source, and private.</h2>
-    <p>Ribbon saves your activity on your Mac. There's no account to create. To use the AI features, sign in with your ChatGPT plan or add an OpenAI API key in Settings. Ribbon then sends app and website names to OpenAI, and screenshots during focus sessions. If you add a Gemini API key for the orb's voice, what the orb says aloud is sent to Google to be turned into speech.</p>
-    <div class="actions">
-      <a class="button" href="https://github.com/lenajeremy/ribbon/releases/latest/download/Ribbon.dmg">Download for Mac</a>
-      <a class="button secondary" href="https://github.com/lenajeremy/ribbon">View on GitHub</a>
-    </div>
-  </section>
-
-  <footer>Ribbon is open source under the MIT license.</footer>
+<script>
+  // The pager under the strip of screens: one dot per screen, the current one long.
+  (function () {
+    var strip = document.getElementById("strip"), pager = document.getElementById("pager");
+    var screens = Array.prototype.slice.call(strip.querySelectorAll(".screen"));
+    var dots = screens.map(function (screen, i) {
+      var dot = document.createElement("button");
+      dot.type = "button";
+      dot.setAttribute("aria-label", "Show " + screen.querySelector("h3").textContent);
+      dot.addEventListener("click", function () {
+        strip.scrollTo({ left: screen.offsetLeft - screens[0].offsetLeft, behavior: "smooth" });
+      });
+      pager.appendChild(dot);
+      return dot;
+    });
+    function update() {
+      var left = strip.scrollLeft, current = 0;
+      screens.forEach(function (screen, i) { if (screen.offsetLeft - screens[0].offsetLeft <= left + 40) current = i; });
+      if (left + strip.clientWidth >= strip.scrollWidth - 4) current = screens.length - 1;
+      dots.forEach(function (dot, i) { dot.setAttribute("aria-current", i === current ? "true" : "false"); });
+    }
+    strip.addEventListener("scroll", function () { window.requestAnimationFrame(update); }, { passive: true });
+    window.addEventListener("resize", update);
+    update();
+  })();
+</script>
 </body>
 </html>
