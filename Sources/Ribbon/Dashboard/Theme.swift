@@ -209,6 +209,18 @@ struct PillButtonStyle: ButtonStyle {
     var destructive = false
 
     func makeBody(configuration: Configuration) -> some View {
+        PillButton(configuration: configuration, primary: primary, destructive: destructive)
+    }
+}
+
+/// A pill that fades when it's disabled, so a button you can't use doesn't look like one you can.
+private struct PillButton: View {
+    let configuration: ButtonStyleConfiguration
+    let primary: Bool
+    let destructive: Bool
+    @Environment(\.isEnabled) private var isEnabled
+
+    var body: some View {
         configuration.label
             .font(.system(size: 13, weight: .medium))
             .foregroundStyle(primary ? Theme.page : destructive ? Theme.distracting : Theme.ink)
@@ -216,7 +228,7 @@ struct PillButtonStyle: ButtonStyle {
             .frame(height: 30)
             .background(primary ? Theme.ink : Theme.page, in: Capsule())
             .overlay(Capsule(style: .circular).strokeBorder(primary ? Color.clear : destructive ? Theme.distracting.opacity(0.6) : Theme.hairline))
-            .opacity(configuration.isPressed ? 0.7 : 1)
+            .opacity(!isEnabled ? 0.38 : configuration.isPressed ? 0.7 : 1)
             .contentShape(Capsule())
     }
 }

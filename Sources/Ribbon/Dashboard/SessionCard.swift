@@ -1,13 +1,14 @@
 import SwiftUI
 
 /// The session running now, at the top of Today: what it is, a live countdown with how much is done, and the
-/// controls the session allows. Pausing, ending and the emergency pass take the same effort as at the orb.
+/// controls the session allows. Pausing and ending take the same effort as at the orb. A scheduled session gets no
+/// controls here: the emergency pass is kept in Settings, out of sight while you work.
 struct SessionCard: View {
     let focus: FocusController
     @State private var asking: Ask?
 
     enum Ask: String, Identifiable {
-        case pause, end, pass
+        case pause, end
         var id: String { rawValue }
     }
 
@@ -76,14 +77,8 @@ struct SessionCard: View {
     @ViewBuilder private var buttons: some View {
         let orb = focus.model
         HStack(spacing: 8) {
-            if let _ = focus.window {
-                let pass = focus.emergencyPass
-                if pass.available {
-                    Button("Use emergency pass") { asking = .pass }.buttonStyle(PillButtonStyle(destructive: true))
-                } else {
-                    Text("No emergency pass left this week").font(Typeface.caption).foregroundStyle(Theme.muted)
-                        .help(pass.note)
-                }
+            if focus.window != nil {
+                EmptyView()
             } else if orb.phase == .rest {
                 Button("End break") { focus.endBreak() }.buttonStyle(PillButtonStyle())
             } else if orb.paused {
@@ -99,7 +94,7 @@ struct SessionCard: View {
     }
 }
 
-/// Pausing, ending or using the emergency pass from the dashboard: the same reason and hold as at the orb.
+/// Pausing or ending from the dashboard: the same reason and hold as at the orb.
 struct ConfirmSessionAction: View {
     let ask: SessionCard.Ask
     let focus: FocusController
@@ -129,11 +124,6 @@ struct ConfirmSessionAction: View {
                            tint: Theme.distracting, enabled: words >= 3, track: Theme.bubble) {
                     focus.stop(reason: reason.trimmingCharacters(in: .whitespacesAndNewlines)); close()
                 }
-            case .pass:
-                HoldButton(title: words >= 3 ? "Hold 5 seconds to use it" : "Give a reason first", seconds: 5,
-                           tint: Theme.distracting, enabled: words >= 3, track: Theme.bubble) {
-                    focus.useEmergencyPass(reason: reason.trimmingCharacters(in: .whitespacesAndNewlines)); close()
-                }
             }
             HStack {
                 Spacer()
@@ -152,7 +142,6 @@ struct ConfirmSessionAction: View {
         switch ask {
         case .pause: "Pause this session?"
         case .end: "End this session?"
-        case .pass: "Use your emergency pass?"
         }
     }
 
@@ -164,10 +153,6 @@ struct ConfirmSessionAction: View {
                 + "when it runs out, the session carries on by itself."
         case .end:
             return "\(clock(orb.timeLeft(at: Date()))) left on the clock. What's making you stop?"
-        case .pass:
-            let until = focus.window.map { Format.time($0.end) } ?? "its end"
-            return "It ends this scheduled session for the rest of today (it runs until \(until)), and it's your only one this week. "
-                + "What's the emergency?"
         }
     }
 }

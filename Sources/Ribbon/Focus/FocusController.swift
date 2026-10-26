@@ -203,7 +203,7 @@ import SwiftUI
             return (true, "You have this week's emergency pass. It's the only way to end a scheduled session early.")
         }
         return (false, "You used this week's emergency pass on \(used.formatted(.dateTime.weekday(.wide))) at \(Format.time(used)). "
-                + "You get a new one on Monday.")
+                + "You get a new one next Monday.")
     }
 
     private func closeBreak() {
@@ -305,7 +305,7 @@ import SwiftUI
     }
 
     /// Quitting mid-session is the same as stopping, so it goes through the same deliberate steps.
-    /// During a scheduled window that means the emergency pass, even on a break.
+    /// A scheduled window can't be quit at all, even on a break; its controls don't offer the emergency pass.
     func allowQuit() -> Bool {
         guard model.phase == .focus || window != nil else { return true }
         openPanel()
@@ -718,7 +718,6 @@ import SwiftUI
             resume: { [weak self] in self?.resume() },
             changeFocus: { [weak self] in self?.changeFocus(to: $0) },
             stop: { [weak self] in self?.stop(reason: $0) },
-            useEmergencyPass: { [weak self] in self?.useEmergencyPass(reason: $0) },
             toggleMute: { [weak self] in
                 guard let self else { return }
                 model.muted.toggle()
@@ -752,7 +751,6 @@ import SwiftUI
             profiles: all,
             profileID: profileID ?? activeProfile?.id ?? all.first?.id,
             actions: panelActions,
-            emergencyPass: emergencyPass,
             suggest: { [assistant] task in await assistant.suggestProfile(for: task, from: all) }))
         host.sizingOptions = []
         window.contentView = host

@@ -6,7 +6,6 @@ struct PanelActions {
     var resume: @MainActor () -> Void
     var changeFocus: @MainActor (String) -> Void
     var stop: @MainActor (String) -> Void
-    var useEmergencyPass: @MainActor (String) -> Void
     var toggleMute: @MainActor () -> Void
     var quit: @MainActor () -> Void
     var close: @MainActor () -> Void
@@ -21,8 +20,6 @@ struct ControlPanel: View {
     let model: OrbModel
     let profiles: [SessionProfile]
     let actions: PanelActions
-    /// Whether this week's emergency pass is left, and what to say about it.
-    let emergencyPass: (available: Bool, note: String)
     let suggest: (String) async -> String?
     @State private var step: Step
     @State private var text: String
@@ -34,11 +31,10 @@ struct ControlPanel: View {
     @FocusState private var fieldFocused: Bool
 
     init(model: OrbModel, profiles: [SessionProfile], profileID: String?, actions: PanelActions,
-         emergencyPass: (available: Bool, note: String), suggest: @escaping (String) async -> String?) {
+         suggest: @escaping (String) async -> String?) {
         self.model = model
         self.profiles = profiles
         self.actions = actions
-        self.emergencyPass = emergencyPass
         self.suggest = suggest
         // A scheduled window shows its menu even on a break; there's no starting another session during one.
         let starting = model.phase != .focus && model.scheduledUntil == nil
@@ -157,7 +153,8 @@ struct ControlPanel: View {
         }
     }
 
-    /// A scheduled session: no pausing or stopping, only changing focus and the weekly emergency pass.
+    /// A scheduled session: no pausing or stopping, only changing focus. The emergency pass is in Settings,
+    /// several deliberate steps away, so it isn't a click away during the session.
     private func scheduledMenu(_ now: Date, until: Date) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             header(model.phase == .rest ? "SCHEDULED BREAK" : model.profileName.uppercased(),
@@ -165,13 +162,10 @@ struct ControlPanel: View {
             Text(model.task)
                 .font(.system(size: 16, weight: .semibold, design: .rounded))
                 .lineLimit(2)
-            HStack(spacing: 8) {
-                if model.phase == .focus {
-                    PanelButton("Change focus", systemImage: "arrow.triangle.swap") { go(.change) }
-                }
-                PanelButton("Emergency pass", systemImage: "exclamationmark.octagon.fill", enabled: emergencyPass.available) { go(.stop) }
+            if model.phase == .focus {
+                PanelButton("Change focus", systemImage: "arrow.triangle.swap") { go(.change) }
             }
-            note("Scheduled until \(Format.time(until)). Its rules stay on through breaks. " + emergencyPass.note)
+            note("Scheduled until \(Format.time(until)). Its rules stay on through breaks.")
         }
     }
 
@@ -213,12 +207,8 @@ struct ControlPanel: View {
         let words = entered.split(whereSeparator: \.isWhitespace).count
         if let until = model.scheduledUntil {
             return AnyView(VStack(alignment: .leading, spacing: 12) {
-                title("Use your emergency pass?")
-                note("It ends this scheduled session for the rest of today (it runs until \(Format.time(until))), "
-                     + "and it's your only one this week. What's the emergency?")
-                field("A real reason, a few words at least")
-                HoldButton(title: words >= 3 ? "Hold 5 seconds to use it" : "Give a reason first", seconds: 5,
-                           tint: Color(hex: 0xFF4D5E), enabled: words >= 3) { actions.useEmergencyPass(entered) }
+                title("A scheduled session can't be stopped")
+                note("Its rules stay on until \(Format.time(until)).")
                 backButton
             })
         }

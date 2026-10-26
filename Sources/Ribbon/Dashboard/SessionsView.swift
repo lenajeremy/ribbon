@@ -39,11 +39,6 @@ struct SessionsView: View {
                                 toggle: { var changed = schedule; changed.enabled.toggle(); model.save(changed) },
                                 edit: { model.editingSchedule = schedule })
                 }
-                if let pass = model.focus?.emergencyPass {
-                    Label(pass.note, systemImage: pass.available ? "exclamationmark.octagon" : "clock")
-                        .font(Typeface.caption).foregroundStyle(Theme.muted)
-                        .padding(.top, 10)
-                }
             }
             SectionLabel("Recent sessions")
             let removed = model.sessions.filter(\.hidden).count
@@ -221,7 +216,7 @@ struct ScheduleEditor: View {
                         DatePicker("", selection: time(\.end), displayedComponents: .hourAndMinute).labelsHidden()
                     }
                 }
-                Text("From the start time to the end, the session's rules stay on, breaks included. The only way to end it early is your emergency pass, one a week. If Ribbon is quit during a scheduled session, it reopens within a minute and carries on.")
+                Text("From the start time to the end, the session's rules stay on, breaks included. The only way to end it early is the emergency pass in Settings, one a week. If Ribbon is quit during a scheduled session, it reopens within a minute and carries on.")
                     .font(Typeface.caption).foregroundStyle(Theme.muted).fixedSize(horizontal: false, vertical: true)
                     .padding(.top, 14)
             }

@@ -2,6 +2,11 @@
 
 Ribbon shows the section for a new version when it offers you the update.
 
+## 3.19
+
+- **The emergency pass is out of the way during a session.** It's no longer on the orb's controls, the session card on Today or the Focus sessions page. To use it, open Settings › Emergency pass, click End session…, confirm, give a reason, and hold for 5 seconds.
+- Buttons you can't use right now look faded.
+
 ## 3.18
 
 - Outlined buttons, like Edit, Cancel, Delete and Rewrite, and the message box no longer show thin stray lines at their ends.

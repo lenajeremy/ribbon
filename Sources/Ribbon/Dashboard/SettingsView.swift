@@ -18,6 +18,7 @@ struct SettingsView: View {
 
     enum Pane: String, CaseIterable, Identifiable {
         case general = "General", tracking = "Tracking", breaks = "Breaks", permissions = "Permissions", ai = "AI", data = "Data"
+        case emergency = "Emergency pass"
         var id: String { rawValue }
         var symbol: String {
             switch self {
@@ -27,6 +28,7 @@ struct SettingsView: View {
             case .permissions: "lock"
             case .ai: "sparkles"
             case .data: "externaldrive"
+            case .emergency: "exclamationmark.octagon"
             }
         }
     }
@@ -78,6 +80,8 @@ struct SettingsView: View {
     @ViewBuilder private var rows: some View {
         @Bindable var settings = model.settings
         switch pane {
+        case .emergency:
+            EmergencyPassPane(focus: model.focus)
         case .general:
             SettingRow("Open at login", "Start Ribbon when you log in, so tracking never misses a day.") {
                 Toggle("", isOn: Binding(get: { settings.launchAtLogin }, set: { settings.launchAtLogin = $0; refresh += 1 }))
@@ -443,6 +447,79 @@ private struct OrbVoiceRows: View {
             player?.play()
         } catch {
             sampleError = "Couldn't play a sample: \(error.localizedDescription)"
+        }
+    }
+}
+
+/// The weekly emergency pass, the only way to end a scheduled session early. It lives here, at the bottom of
+/// Settings, and takes three more deliberate steps (are you sure, a reason, a 5-second hold), so it's never a click
+/// away while a session is running.
+struct EmergencyPassPane: View {
+    let focus: FocusController?
+    @State private var step: Int
+    @State private var reason: String
+
+    init(focus: FocusController?, step: Int = 0, reason: String = "") {
+        self.focus = focus
+        _step = State(initialValue: step)
+        _reason = State(initialValue: reason)
+    }
+
+    private var words: Int { reason.split(whereSeparator: \.isWhitespace).count }
+
+    var body: some View {
+        let pass = focus?.emergencyPass ?? (available: true, note: "")
+        let window = focus?.window
+        if step == 0 {
+            SettingRow("This week's pass", pass.note) { EmptyView() }
+            SettingRow("End today's scheduled session", window.map {
+                "Ends the session that runs until \(Format.time($0.end)) and uses this week's pass. It won't start again today."
+            } ?? "Only while a scheduled session is running.") {
+                Button("End session…") { reason = ""; step = 1 }
+                    .buttonStyle(PillButtonStyle(destructive: true))
+                    .disabled(window == nil || !pass.available)
+            }
+        } else {
+            VStack(alignment: .leading, spacing: 14) {
+                Text("Step \(step) of 3").font(Typeface.caption).foregroundStyle(Theme.muted)
+                switch step {
+                case 1:
+                    Text("Are you sure?").font(.system(size: 17, weight: .semibold))
+                    Text("This uses your only emergency pass this week and ends today's scheduled session"
+                         + (window.map { ", which runs until \(Format.time($0.end))" } ?? "")
+                         + ". It won't start again today, and you get a new pass next Monday.")
+                        .font(Typeface.body).foregroundStyle(Theme.muted).fixedSize(horizontal: false, vertical: true)
+                    HStack(spacing: 8) {
+                        Spacer()
+                        Button("Cancel") { step = 0 }.buttonStyle(PillButtonStyle())
+                        Button("Yes, continue") { step = 2 }.buttonStyle(PillButtonStyle(destructive: true))
+                    }
+                case 2:
+                    Text("What's the emergency?").font(.system(size: 17, weight: .semibold))
+                    TextField("A real reason, a few words at least", text: $reason)
+                        .textFieldStyle(.plain).font(.system(size: 14))
+                        .padding(.horizontal, 12).frame(height: 34)
+                        .background(Theme.bubble, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                    HStack(spacing: 8) {
+                        Spacer()
+                        Button("Cancel") { step = 0 }.buttonStyle(PillButtonStyle())
+                        Button("Continue") { step = 3 }.buttonStyle(PillButtonStyle(destructive: true)).disabled(words < 3)
+                    }
+                default:
+                    Text("Hold to end today's session").font(.system(size: 17, weight: .semibold))
+                    Text("Your reason: “\(reason.trimmingCharacters(in: .whitespacesAndNewlines))”")
+                        .font(Typeface.body).foregroundStyle(Theme.muted).fixedSize(horizontal: false, vertical: true)
+                    HoldButton(title: "Hold 5 seconds to end it", seconds: 5, tint: Theme.distracting, track: Theme.bubble) {
+                        focus?.useEmergencyPass(reason: reason.trimmingCharacters(in: .whitespacesAndNewlines))
+                        step = 0
+                    }
+                    HStack {
+                        Spacer()
+                        Button("Cancel") { step = 0 }.buttonStyle(PillButtonStyle())
+                    }
+                }
+            }
+            .padding(.top, 18)
         }
     }
 }
