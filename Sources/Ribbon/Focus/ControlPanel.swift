@@ -20,6 +20,8 @@ struct ControlPanel: View {
     let model: OrbModel
     let profiles: [SessionProfile]
     let actions: PanelActions
+    /// Which corner of its window the panel sits in: the one nearest the orb.
+    let alignment: Alignment
     let suggest: (String) async -> String?
     @State private var step: Step
     @State private var text: String
@@ -31,10 +33,11 @@ struct ControlPanel: View {
     @FocusState private var fieldFocused: Bool
 
     init(model: OrbModel, profiles: [SessionProfile], profileID: String?, actions: PanelActions,
-         suggest: @escaping (String) async -> String?) {
+         alignment: Alignment = .bottomTrailing, suggest: @escaping (String) async -> String?) {
         self.model = model
         self.profiles = profiles
         self.actions = actions
+        self.alignment = alignment
         self.suggest = suggest
         // A scheduled window shows its menu even on a break; there's no starting another session during one.
         let starting = model.phase != .focus && model.scheduledUntil == nil
@@ -57,7 +60,7 @@ struct ControlPanel: View {
         }
         .foregroundStyle(.white)
         .padding(8)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: alignment)
         .environment(\.colorScheme, .dark)
         .onExitCommand {
             if step == .start || step == .menu { actions.close() } else { go(.menu) }

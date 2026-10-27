@@ -10,6 +10,8 @@ import ServiceManagement
     var breakReminders: Bool { didSet { defaults.set(breakReminders, forKey: "breakReminders") } }
     var breakIntervalMinutes: Int { didSet { defaults.set(breakIntervalMinutes, forKey: "breakIntervalMinutes") } }
     var showOrbWhenIdle: Bool { didSet { defaults.set(showOrbWhenIdle, forKey: "showOrbWhenIdle") } }
+    /// You hid the orb. Sessions keep running; it comes back when you show it again.
+    var orbHidden: Bool { didSet { defaults.set(orbHidden, forKey: "orbHidden") } }
     var automaticUpdates: Bool { didSet { defaults.set(automaticUpdates, forKey: "automaticUpdates") } }
     var checkIns: Bool { didSet { defaults.set(checkIns, forKey: "checkIns") } }
     var checkInMinutes: Int { didSet { defaults.set(checkInMinutes, forKey: "checkInMinutes") } }
@@ -31,13 +33,14 @@ import ServiceManagement
 
     init() {
         defaults.register(defaults: ["idleMinutes": 5, "focusGoalHours": 4.0, "breakReminders": true,
-                                     "breakIntervalMinutes": 50, "showOrbWhenIdle": true, "automaticUpdates": true,
+                                     "breakIntervalMinutes": 50, "showOrbWhenIdle": true, "orbHidden": false, "automaticUpdates": true,
                                      "checkIns": true, "checkInMinutes": 30, "orbTone": OrbTone.friendly.rawValue])
         idleMinutes = defaults.integer(forKey: "idleMinutes")
         focusGoalHours = defaults.double(forKey: "focusGoalHours")
         breakReminders = defaults.bool(forKey: "breakReminders")
         breakIntervalMinutes = defaults.integer(forKey: "breakIntervalMinutes")
         showOrbWhenIdle = defaults.bool(forKey: "showOrbWhenIdle")
+        orbHidden = defaults.bool(forKey: "orbHidden")
         automaticUpdates = defaults.bool(forKey: "automaticUpdates")
         checkIns = defaults.bool(forKey: "checkIns")
         checkInMinutes = defaults.integer(forKey: "checkInMinutes")

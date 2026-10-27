@@ -50,6 +50,11 @@ import AppKit
         add(menu, "Open Dashboard", #selector(openToday), "d")
         add(menu, focus.model.phase == .focus || focus.window != nil ? "Session Controls…" : "Start a Focus Session…", #selector(startSession), "f")
         add(menu, "Ask AI…", #selector(openAsk), "")
+        let orb = NSMenuItem(title: focus.orbHidden ? "Show Orb" : "Hide Orb", action: #selector(toggleOrb), keyEquivalent: "o")
+        orb.keyEquivalentModifierMask = [.command, .option, .control]
+        orb.target = self
+        menu.addItem(orb)
+        if focus.orbMoved { add(menu, "Reset Orb Position", #selector(resetOrb), "") }
         menu.addItem(.separator())
         if tracker.isPaused {
             add(menu, "Resume Tracking", #selector(resumeTracking), "")
@@ -80,6 +85,8 @@ import AppKit
     @objc private func openToday() { openDashboard(.today) }
     @objc private func openAsk() { openDashboard(.ask) }
     @objc private func startSession() { focus.openPanel() }
+    @objc private func toggleOrb() { focus.setOrbHidden(!focus.orbHidden) }
+    @objc private func resetOrb() { focus.resetOrbPosition() }
     @objc private func resumeTracking() { tracker.pausedUntil = nil; update() }
     @objc private func pause15() { tracker.pausedUntil = Date().addingTimeInterval(15 * 60); update() }
     @objc private func pauseHour() { tracker.pausedUntil = Date().addingTimeInterval(3600); update() }

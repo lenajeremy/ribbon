@@ -1,3 +1,4 @@
+import Carbon
 import AppKit
 
 @main
@@ -108,6 +109,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.mainMenu = Self.mainMenu()
         Notifier.requestPermission()
         let args = CommandLine.arguments
+        // ⌃⌥⌘O hides or shows the orb from any app.
+        HotKey.register(id: 1, keyCode: kVK_ANSI_O, modifiers: cmdKey | optionKey | controlKey) { [weak self] in
+            guard let focus = self?.focus else { return }
+            focus.setOrbHidden(!focus.orbHidden)
+        }
         focus.start(task: args.firstIndex(of: "--start").flatMap { args.indices.contains($0 + 1) ? args[$0 + 1] : nil })
         scheduler.start()
         tracker.start()

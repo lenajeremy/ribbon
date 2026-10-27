@@ -2,6 +2,11 @@
 
 Ribbon shows the section for a new version when it offers you the update.
 
+## 3.20
+
+- **Move the orb anywhere.** Drag it to any spot on your screen. Ribbon remembers where you leave it, and its label and controls open on whichever side has room. Reset Orb Position, in the orb's right-click menu, the menu bar or Settings › General, puts it back in the corner.
+- **Hide the orb whenever you want.** Press ⌃⌥⌘O, use Hide Orb in the menu bar, right-click the orb, or turn off Show the orb in Settings › General. A session keeps running while it's hidden: blocking goes on and nudges are still spoken, but nothing pops up. Opening the session controls brings the orb back while they're open.
+
 ## 3.19
 
 - **The emergency pass is out of the way during a session.** It's no longer on the orb's controls, the session card on Today or the Focus sessions page. To use it, open Settings › Emergency pass, click End session…, confirm, give a reason, and hold for 5 seconds.

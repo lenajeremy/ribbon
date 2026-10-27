@@ -43,6 +43,8 @@ import SwiftUI
     private var timers: [Timer] = []
     private var watcher: Task<Void, Never>?
     private var pressing = false
+    /// Where a press on the small orb began, and where the orb was, to drag it from there.
+    private var dragStart: (mouse: CGPoint, orb: CGPoint)?
     private var pressBeganNudging = false
     private var holdWork: Task<Void, Never>?
     private var screenLocked = false
@@ -86,17 +88,19 @@ import SwiftUI
         every(1) { [weak self] in self?.tick() }
         every(1.0 / 30) { [weak self] in self?.pollMouse() }
         // The overlay only takes the mouse while it's over the orb, so any press it gets is a press on the orb.
-        NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown, .leftMouseUp, .rightMouseDown]) { [weak self] event in
+        NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown, .leftMouseDragged, .leftMouseUp, .rightMouseDown]) { [weak self] event in
             guard let self, event.window === overlay else { return event }
             MainActor.assumeIsolated {
                 switch event.type {
                 case .leftMouseDown: self.orbPressed()
+                case .leftMouseDragged: self.orbDragged()
                 case .leftMouseUp: self.orbReleased()
-                default: self.tapped()
+                default: self.showOrbMenu(event)
                 }
             }
             return nil
         }
+        model.anchor = Self.savedAnchor()
         observeSystem()
 
         if !ScreenCapture.hasPermission {
@@ -313,7 +317,8 @@ import SwiftUI
     }
 
     func updateOverlayVisibility() {
-        let show = settings.showOrbWhenIdle || model.phase != .idle || panel != nil
+        // The controls bring the orb back while they're open, even if you hid it.
+        let show = panel != nil || (!settings.orbHidden && (settings.showOrbWhenIdle || model.phase != .idle))
         if model.visible != show { model.visible = show }
         if show && !overlay.isVisible { overlay.orderFrontRegardless() }
         if !show && overlay.isVisible { overlay.orderOut(nil) }
@@ -640,7 +645,9 @@ import SwiftUI
         spokenLines.append(line.text)
         logLine("Nudge #\(nudgeCount): \(line.text)" + (line.delivery.isEmpty ? "" : " [\(line.delivery)]"))
 
-        if model.nudging {
+        if settings.orbHidden {
+            // You hid the orb: the line is still spoken, but nothing pops up.
+        } else if model.nudging {
             withAnimation(.easeInOut(duration: 0.4)) { model.nudgeText = line.text }
         } else {
             closePanel()
@@ -692,6 +699,7 @@ import SwiftUI
         guard !pressing else { return }
         pressing = true
         pressBeganNudging = model.nudging
+        if !model.nudging { dragStart = (NSEvent.mouseLocation, orbScreenCenter(nudging: false)) }
         guard model.nudging else { return }
         withAnimation(.linear(duration: 2)) { model.holding = true }
         holdWork = Task { [weak self] in
@@ -705,10 +713,88 @@ import SwiftUI
     private func orbReleased(click: Bool = true) {
         guard pressing else { return }
         pressing = false
+        dragStart = nil
         holdWork?.cancel()
         holdWork = nil
         withAnimation(.spring(duration: 0.3)) { model.holding = false }
+        if model.dragging {
+            finishMovingOrb()
+            return
+        }
         if click && !pressBeganNudging { tapped() }
+    }
+
+    /// Dragging the small orb moves it. A press only becomes a drag past a few points, so a click still opens the controls.
+    private func orbDragged() {
+        guard pressing, !pressBeganNudging, let start = dragStart else { return }
+        let mouse = NSEvent.mouseLocation
+        if !model.dragging {
+            guard hypot(mouse.x - start.mouse.x, mouse.y - start.mouse.y) >= 4 else { return }
+            closePanel()
+            model.dragging = true
+        }
+        moveOrb(to: CGPoint(x: start.orb.x + mouse.x - start.mouse.x, y: start.orb.y + mouse.y - start.mouse.y))
+    }
+
+    // MARK: Moving and hiding the orb
+
+    private static let anchorKey = "orbAnchor"
+
+    private static func savedAnchor() -> CGPoint? {
+        guard let pair = UserDefaults.standard.array(forKey: anchorKey) as? [Double], pair.count == 2 else { return nil }
+        return CGPoint(x: pair[0], y: pair[1])
+    }
+
+    /// Puts the small orb's center at `point` (screen coordinates), kept fully on screen.
+    func moveOrb(to point: CGPoint) {
+        let frame = overlay.frame
+        model.anchor = OrbLayout.anchor(for: CGPoint(x: point.x - frame.minX, y: frame.maxY - point.y), in: frame.size)
+    }
+
+    /// Remembers where the orb was left, for every session and launch after this one.
+    func finishMovingOrb() {
+        model.dragging = false
+        guard let anchor = model.anchor else { return }
+        UserDefaults.standard.set([Double(anchor.x), Double(anchor.y)], forKey: Self.anchorKey)
+        logLine(String(format: "Orb moved to %.0f%% across, %.0f%% down", anchor.x * 100, anchor.y * 100))
+    }
+
+    /// Back to the bottom-right corner.
+    func resetOrbPosition() {
+        UserDefaults.standard.removeObject(forKey: Self.anchorKey)
+        withAnimation(.spring(duration: 0.6, bounce: 0.2)) { model.anchor = nil }
+        logLine("Orb back in the corner")
+    }
+
+    var orbHidden: Bool { settings.orbHidden }
+    var orbMoved: Bool { model.anchor != nil }
+
+    /// Hides or shows the orb. A session keeps running while it's hidden: blocking goes on, and nudges are still
+    /// spoken, but nothing pops up.
+    func setOrbHidden(_ hidden: Bool) {
+        guard settings.orbHidden != hidden else { return }
+        settings.orbHidden = hidden
+        if hidden {
+            closePanel()
+            endNudge()
+        }
+        updateOverlayVisibility()
+        logLine(hidden ? "Orb hidden" : "Orb shown")
+    }
+
+    /// Right-clicking the orb: hide it, put it back in its corner, or open the controls or the dashboard.
+    private func showOrbMenu(_ event: NSEvent) {
+        guard let view = overlay.contentView, !model.nudging else { return }
+        orbReleased(click: false)
+        let menu = NSMenu()
+        menu.addItem(MenuAction("Hide Orb", key: "o", modifiers: [.command, .option, .control]) { [weak self] in self?.setOrbHidden(true) })
+        if orbMoved { menu.addItem(MenuAction("Reset Orb Position") { [weak self] in self?.resetOrbPosition() }) }
+        menu.addItem(.separator())
+        menu.addItem(MenuAction(model.phase == .focus || window != nil ? "Session Controls…" : "Start a Focus Session…") { [weak self] in
+            self?.openPanel()
+        })
+        menu.addItem(MenuAction("Open Dashboard") { [weak self] in self?.openDashboard?() })
+        menu.popUp(positioning: nil, at: view.convert(event.locationInWindow, from: nil), in: view)
     }
 
     private var panelActions: PanelActions {
@@ -738,19 +824,16 @@ import SwiftUI
         guard panel == nil, !model.nudging else { return }
         if !overlay.isVisible { overlay.orderFrontRegardless() }
         previousApp = NSWorkspace.shared.frontmostApplication
-        let orb = orbScreenCenter(nudging: false)
-        let ringRadius = OrbLayout.ringDiameter(OrbLayout.smallCore) / 2
-        // Grows up and to the left from beside the orb; the content sits in the bottom-right corner.
-        let size = NSSize(width: 420, height: 340)
-        let window = InputPanel(frame: NSRect(
-            x: orb.x - ringRadius - 4 - size.width, y: orb.y - 41,
-            width: size.width, height: size.height))
+        // Grows from beside the orb, toward whichever side of the screen has room.
+        let place = OrbLayout.panelFrame(orb: orbScreenCenter(nudging: false), size: CGSize(width: 420, height: 340), screen: overlay.frame)
+        let window = InputPanel(frame: place.frame)
         let all = profiles()
         let host = NSHostingView(rootView: ControlPanel(
             model: model,
             profiles: all,
             profileID: profileID ?? activeProfile?.id ?? all.first?.id,
             actions: panelActions,
+            alignment: place.alignment,
             suggest: { [assistant] task in await assistant.suggestProfile(for: task, from: all) }))
         host.sizingOptions = []
         window.contentView = host
@@ -797,9 +880,9 @@ import SwiftUI
 
     // MARK: Screens and system
 
-    private func orbScreenCenter(nudging: Bool) -> CGPoint {
+    func orbScreenCenter(nudging: Bool) -> CGPoint {
         let frame = overlay.frame
-        let center = OrbLayout.center(in: frame.size, nudging: nudging)
+        let center = OrbLayout.center(in: frame.size, nudging: nudging, anchor: model.anchor)
         return CGPoint(x: frame.minX + center.x, y: frame.maxY - center.y)
     }
 

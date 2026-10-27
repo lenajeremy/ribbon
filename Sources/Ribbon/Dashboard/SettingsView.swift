@@ -87,9 +87,20 @@ struct SettingsView: View {
                 Toggle("", isOn: Binding(get: { settings.launchAtLogin }, set: { settings.launchAtLogin = $0; refresh += 1 }))
                     .toggleStyle(.switch).labelsHidden()
             }
-            SettingRow("Show the orb when idle", "Keep the orb in the corner when no focus session is running.") {
+            SettingRow("Show the orb", "Hide it any time with ⌃⌥⌘O, from the menu bar, or by right-clicking the orb. Sessions keep running while it's hidden.") {
+                Toggle("", isOn: Binding(get: { !settings.orbHidden }, set: { shown in
+                    if let focus = model.focus { focus.setOrbHidden(!shown) } else { settings.orbHidden = !shown }
+                })).toggleStyle(.switch).labelsHidden()
+            }
+            SettingRow("Show the orb when idle", "Keep the orb on screen when no focus session is running.") {
                 Toggle("", isOn: $settings.showOrbWhenIdle).toggleStyle(.switch).labelsHidden()
                     .onChange(of: settings.showOrbWhenIdle) { model.focus?.updateOverlayVisibility() }
+                    .disabled(settings.orbHidden)
+            }
+            SettingRow("Orb position", "Drag the orb anywhere on your screen. Ribbon remembers where you leave it.") {
+                Button("Reset") { model.focus?.resetOrbPosition() }
+                    .buttonStyle(PillButtonStyle())
+                    .disabled(model.focus?.model.anchor == nil)
             }
             SettingRow("Check in with me", "Ribbon looks at your day and sends a nudge when you drift, or encouragement when it's going well.") {
                 Toggle("", isOn: $settings.checkIns).toggleStyle(.switch).labelsHidden()

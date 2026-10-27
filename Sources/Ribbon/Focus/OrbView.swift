@@ -6,21 +6,24 @@ struct OverlayView: View {
     let model: OrbModel
     var body: some View {
         GeometryReader { geo in
-            let center = OrbLayout.center(in: geo.size, nudging: model.nudging)
+            let center = OrbLayout.center(in: geo.size, nudging: model.nudging, anchor: model.anchor)
             let core = OrbLayout.core(nudging: model.nudging)
             let ringRadius = OrbLayout.ringDiameter(core) / 2
+            let left = OrbLayout.labelOnLeft(center: center)
+            let labelAt = CGPoint(x: left ? center.x - ringRadius - 12 - 170 : center.x + ringRadius + 12 + 170,
+                                  y: min(max(center.y, 50), geo.size.height - 50))
 
             ZStack {
                 if let toast = model.toast, !model.nudging, !model.panelOpen {
                     Toast(text: toast, symbol: model.toastSymbol)
-                        .frame(width: 340, alignment: .trailing)
-                        .position(x: center.x - ringRadius - 12 - 170, y: center.y)
-                        .transition(.opacity.combined(with: .offset(x: 10)))
-                } else if model.hovering && !model.nudging && !model.panelOpen {
-                    HoverLabel(model: model)
-                        .frame(width: 340, alignment: .trailing)
-                        .position(x: center.x - ringRadius - 12 - 170, y: center.y)
-                        .transition(.opacity.combined(with: .offset(x: 6)))
+                        .frame(width: 340, alignment: left ? .trailing : .leading)
+                        .position(labelAt)
+                        .transition(.opacity.combined(with: .offset(x: left ? 10 : -10)))
+                } else if model.hovering && !model.dragging && !model.nudging && !model.panelOpen {
+                    HoverLabel(model: model, alignment: left ? .trailing : .leading)
+                        .frame(width: 340, alignment: left ? .trailing : .leading)
+                        .position(labelAt)
+                        .transition(.opacity.combined(with: .offset(x: left ? 6 : -6)))
                 }
 
                 OrbView(
@@ -253,10 +256,13 @@ extension Color {
 
 struct HoverLabel: View {
     let model: OrbModel
+    /// Lined up against the orb: trailing when the label sits to its left, leading when to its right.
+    var alignment: Alignment = .trailing
 
     var body: some View {
+        let leading = alignment == .leading
         TimelineView(.periodic(from: .now, by: 1)) { context in
-            VStack(alignment: .trailing, spacing: 2) {
+            VStack(alignment: leading ? .leading : .trailing, spacing: 2) {
                 Text(title)
                     .font(.system(size: 13, weight: .semibold, design: .rounded))
                     .lineLimit(1)
@@ -267,7 +273,7 @@ struct HoverLabel: View {
                     Text(status)
                         .font(.system(size: 11, weight: .medium, design: .rounded))
                         .foregroundStyle(Color(hex: 0xFFB35C))
-                        .multilineTextAlignment(.trailing)
+                        .multilineTextAlignment(leading ? .leading : .trailing)
                         .lineLimit(3)
                 }
             }
