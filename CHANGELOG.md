@@ -2,6 +2,11 @@
 
 Ribbon shows the section for a new version when it offers you the update.
 
+## 3.21
+
+- **A scheduled session carries on through a restart,** such as an update, a crash or a force-quit, instead of starting over. The whole day stays one session, with one score at the end.
+- **A session cut off by a restart is saved up to the last activity Ribbon recorded,** instead of as zero minutes. Sessions already saved as zero minutes are repaired the same way.
+
 ## 3.20
 
 - **Move the orb anywhere.** Drag it to any spot on your screen. Ribbon remembers where you leave it, and its label and controls open on whichever side has room. Reset Orb Position, in the orb's right-click menu, the menu bar or Settings › General, puts it back in the corner.

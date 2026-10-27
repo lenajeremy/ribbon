@@ -113,7 +113,8 @@ import SwiftUI
 
     // MARK: Phases
 
-    private func startFocus(_ task: String, profileID: String?) {
+    /// Starts a session, or carries on `resuming`, one a restart cut off.
+    private func startFocus(_ task: String, profileID: String?, resuming: SessionRecord? = nil) {
         let all = profiles()
         guard let profile = all.first(where: { $0.id == profileID }) ?? all.first else { return }
         speaker.stop()
@@ -126,15 +127,23 @@ import SwiftUI
         resetDrift()
         let duration = focusLength(profile)
         setPhase(.focus, duration: duration)
-        sessionStart = Date()
         pauses = []
-        sessionNudges = 0
         wavedOff = 0
         driftTotal = 0
-        sessionID = store.beginSession(task: task, profile: profile.name, at: sessionStart!)
+        if let resuming {
+            store.resumeSession(resuming.id)
+            sessionID = resuming.id
+            sessionStart = resuming.start
+            sessionNudges = resuming.nudges
+        } else {
+            sessionStart = Date()
+            sessionNudges = 0
+            sessionID = store.beginSession(task: task, profile: profile.name, at: sessionStart!)
+        }
         if profile.watchScreen { startWatching() }
         onStateChange?()
-        logLine("\(profile.name) session started (\(minutes(duration))): \(task)")
+        logLine(resuming == nil ? "\(profile.name) session started (\(minutes(duration))): \(task)"
+                                : "\(profile.name) session carried on from \(Format.time(sessionStart!)): \(task)")
     }
 
     /// A focus part's length: the session type's, cut short by a scheduled window's end.
@@ -155,8 +164,11 @@ import SwiftUI
         closeBreak()  // A break in another window ends with that window's session.
         self.window = window
         model.scheduledUntil = window.end
-        startFocus(window.schedule.task, profileID: window.schedule.profileID)
-        Notifier.post(title: "Scheduled focus session started",
+        // After a restart (an update, a crash, a force-quit), carry on the session this window already had.
+        let name = profiles().first { $0.id == window.schedule.profileID }?.name ?? ""
+        let earlier = store.interruptedSession(profile: name, task: window.schedule.task, since: window.start)
+        startFocus(window.schedule.task, profileID: window.schedule.profileID, resuming: earlier)
+        Notifier.post(title: earlier == nil ? "Scheduled focus session started" : "Back in your scheduled focus session",
                       body: "\(model.profileName): \(window.schedule.task), until \(Format.time(window.end)).")
         logLine("Scheduled session started until \(Format.time(window.end))")
     }

@@ -48,8 +48,15 @@ private let transient = unsafeBitCast(-1, to: sqlite3_destructor_type.self)
             // Each use of the weekly emergency pass, and the scheduled window it ended.
             "CREATE TABLE IF NOT EXISTS emergency_passes (used REAL NOT NULL, window TEXT NOT NULL, reason TEXT NOT NULL)",
         ] { run(sql) }
-        // A session left "running" by a crash or quit ends where it was.
-        run("UPDATE sessions SET outcome = 'interrupted', end = COALESCE(end, start) WHERE outcome = 'running'")
+        // A session left "running" by a crash, a force-quit or an update ends where Ribbon last recorded activity in it,
+        // never after the next session began. So do ones saved as zero minutes before this was fixed.
+        run("""
+            UPDATE sessions SET outcome = 'interrupted', end = MAX(start, MIN(
+                COALESCE((SELECT MAX(a.end) FROM activity a WHERE a.start >= sessions.start
+                          AND a.start < COALESCE((SELECT MIN(n.start) FROM sessions n WHERE n.start > sessions.start), 1e18)), start),
+                COALESCE((SELECT MIN(n.start) FROM sessions n WHERE n.start > sessions.start), 1e18)))
+            WHERE outcome = 'running' OR (outcome = 'interrupted' AND end = start)
+            """)
     }
 
     // MARK: Activity
@@ -248,6 +255,17 @@ private let transient = unsafeBitCast(-1, to: sqlite3_destructor_type.self)
     func beginSession(task: String, profile: String, at date: Date) -> Int64 {
         run("INSERT INTO sessions (start, task, profile) VALUES (?,?,?)", [date, task, profile])
         return sqlite3_last_insert_rowid(db)
+    }
+
+    /// The latest session of this type and task cut off since `date`, so a scheduled session can carry on after a restart.
+    func interruptedSession(profile: String, task: String, since date: Date) -> SessionRecord? {
+        sessions(from: date, to: Date().addingTimeInterval(60))
+            .filter { $0.outcome == "interrupted" && $0.profile == profile && $0.task == task }
+            .max { $0.start < $1.start }
+    }
+
+    func resumeSession(_ id: Int64) {
+        run("UPDATE sessions SET outcome = 'running', end = NULL WHERE id = ?", [id])
     }
 
     func endSession(_ id: Int64, outcome: String, note: String = "", at date: Date = Date()) {
