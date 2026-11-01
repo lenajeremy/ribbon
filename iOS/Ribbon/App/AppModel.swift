@@ -43,7 +43,7 @@ import UserNotifications
         for key in ["RibbonScroll", "RibbonAppearance"] {
             SharedStore.defaults.set(UserDefaults.standard.string(forKey: key), forKey: key)
         }
-        SharedStore.defaults.set(arguments.contains { $0.hasPrefix("-Ribbon") }, forKey: "RibbonShot")
+        SharedStore.defaults.set(arguments.contains("-RibbonProbe"), forKey: "RibbonShot")
         Demo.open(self)
         #else
         if demo { Demo.open(self) }
