@@ -1,0 +1,12 @@
+// Signs a development build for a registered iPhone with the "Ribbon Dev" profiles, without Xcode's account:
+// xcodebuild -scheme Ribbon -xcconfig Signing/Dev.xcconfig -destination 'id=<iPhone UDID>' build
+CODE_SIGN_STYLE = Manual
+CODE_SIGN_IDENTITY = Apple Development
+DEVELOPMENT_TEAM = N58PT393QS
+PROVISIONING_PROFILE_SPECIFIER = $(RIBBON_PROFILE_$(TARGET_NAME))
+RIBBON_PROFILE_Ribbon = Ribbon Dev App
+RIBBON_PROFILE_RibbonReport = Ribbon Dev Report
+RIBBON_PROFILE_RibbonMonitor = Ribbon Dev Monitor
+RIBBON_PROFILE_RibbonShield = Ribbon Dev Shield
+RIBBON_PROFILE_RibbonShieldAction = Ribbon Dev ShieldAction
+RIBBON_PROFILE_RibbonWidgets = Ribbon Dev Widgets

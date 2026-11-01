@@ -1,0 +1,193 @@
+# Ribbon for iPhone. Generate the Xcode project with `xcodegen` in this folder.
+name: Ribbon
+options:
+  bundleIdPrefix: com.jeremiahlena
+  deploymentTarget:
+    iOS: "18.0"
+  createIntermediateGroups: true
+  developmentLanguage: en
+
+settings:
+  base:
+    DEVELOPMENT_TEAM: N58PT393QS
+    CODE_SIGN_STYLE: Automatic
+    SWIFT_VERSION: "5.0"
+    MARKETING_VERSION: "1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    TARGETED_DEVICE_FAMILY: "1"
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+    GENERATE_INFOPLIST_FILE: NO
+
+targets:
+  Ribbon:
+    type: application
+    platform: iOS
+    sources:
+      - path: Ribbon
+      - path: Shared
+      - path: Usage
+    info:
+      path: Ribbon/Info.plist
+      properties:
+        CFBundleDisplayName: Ribbon
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        UILaunchScreen:
+          UIColorName: ""
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+        UIRequiresFullScreen: true
+        NSSupportsLiveActivities: true
+        ITSAppUsesNonExemptEncryption: false
+        CFBundleURLTypes:
+          - CFBundleURLName: com.jeremiahlena.ribbon
+            CFBundleURLSchemes: [ribbon]
+    entitlements:
+      path: Ribbon/Ribbon.entitlements
+      properties:
+        com.apple.developer.family-controls: true
+        com.apple.security.application-groups: [group.com.jeremiahlena.ribbon]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.jeremiahlena.ribbon
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+    dependencies:
+      - target: RibbonReport
+      - target: RibbonMonitor
+      - target: RibbonShield
+      - target: RibbonShieldAction
+      - target: RibbonWidgets
+
+  # Draws your Screen Time on Today and This week. Sealed by iOS: it can't send or save what it reads.
+  RibbonReport:
+    type: extensionkit-extension
+    platform: iOS
+    sources:
+      - path: ReportExtension
+      - path: Usage
+      - path: Shared/AppCategory.swift
+      - path: Shared/Theme.swift
+      - path: Shared/Format.swift
+      - path: Shared/Orb.swift
+    info:
+      path: ReportExtension/Info.plist
+      properties:
+        CFBundleDisplayName: Ribbon Report
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        EXAppExtensionAttributes:
+          EXExtensionPointIdentifier: com.apple.deviceactivityui.report-extension
+    entitlements:
+      path: ReportExtension/RibbonReport.entitlements
+      properties:
+        com.apple.developer.family-controls: true
+        com.apple.security.application-groups: [group.com.jeremiahlena.ribbon]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.jeremiahlena.ribbon.report
+
+  # Turns scheduled sessions on and off at their times, and counts time in distracting apps, while Ribbon is closed.
+  RibbonMonitor:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: MonitorExtension
+      - path: Shared
+        excludes: [Orb.swift, LiveSession.swift]
+    info:
+      path: MonitorExtension/Info.plist
+      properties:
+        CFBundleDisplayName: Ribbon Monitor
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.deviceactivity.monitor-extension
+          NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).Monitor
+    entitlements:
+      path: MonitorExtension/RibbonMonitor.entitlements
+      properties:
+        com.apple.developer.family-controls: true
+        com.apple.security.application-groups: [group.com.jeremiahlena.ribbon]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.jeremiahlena.ribbon.monitor
+
+  # The "blocked" screen that covers an app or site a session doesn't allow.
+  RibbonShield:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: ShieldExtension
+      - path: Shared/Models.swift
+      - path: Shared/AppCategory.swift
+      - path: Shared/SharedStore.swift
+      - path: Shared/Format.swift
+      - path: Shared/Theme.swift
+    info:
+      path: ShieldExtension/Info.plist
+      properties:
+        CFBundleDisplayName: Ribbon Shield
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.ManagedSettingsUI.shield-configuration-service
+          NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).ShieldConfigurationExtension
+    entitlements:
+      path: ShieldExtension/RibbonShield.entitlements
+      properties:
+        com.apple.developer.family-controls: true
+        com.apple.security.application-groups: [group.com.jeremiahlena.ribbon]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.jeremiahlena.ribbon.shield
+
+  # What the blocked screen's Close button does, and counting it for the session review.
+  RibbonShieldAction:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: ShieldActionExtension
+      - path: Shared/Models.swift
+      - path: Shared/AppCategory.swift
+      - path: Shared/SharedStore.swift
+      - path: Shared/Format.swift
+    info:
+      path: ShieldActionExtension/Info.plist
+      properties:
+        CFBundleDisplayName: Ribbon Shield Action
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.ManagedSettings.shield-action-service
+          NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).ShieldActionExtension
+    entitlements:
+      path: ShieldActionExtension/RibbonShieldAction.entitlements
+      properties:
+        com.apple.developer.family-controls: true
+        com.apple.security.application-groups: [group.com.jeremiahlena.ribbon]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.jeremiahlena.ribbon.shieldaction
+
+  # The session on the Lock Screen and in the Dynamic Island.
+  RibbonWidgets:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: Widgets
+      - path: Shared/Theme.swift
+      - path: Shared/Format.swift
+      - path: Shared/Orb.swift
+      - path: Shared/LiveSession.swift
+    info:
+      path: Widgets/Info.plist
+      properties:
+        CFBundleDisplayName: Ribbon
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.jeremiahlena.ribbon.widgets
